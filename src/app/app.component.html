@@ -1,0 +1,293 @@
+<mat-sidenav-container style="height:100vh;">
+  <!-- SIDEBAR -->
+  <mat-sidenav #sidenav mode="side" opened class="sidenav" [class.collapsed]="collapsed">
+    <mat-toolbar color="primary" class="side-toolbar">
+      <mat-icon>inbox</mat-icon>
+      <span class="label">Messages</span>
+      <button mat-icon-button class="collapse-btn" (click)="toggleCollapse()" aria-label="Collapse sidebar">
+        <mat-icon>{{ collapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <mat-nav-list>
+      <a mat-list-item routerLink="/search" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon matListItemIcon>search</mat-icon>
+        <div class="label" matListItemTitle>Search</div>
+      </a>
+      <a mat-list-item routerLink="/inbox" routerLinkActive="active">
+        <mat-icon matListItemIcon>inbox</mat-icon>
+        <div class="label" matListItemTitle>Inbox</div>
+      </a>
+      <a mat-list-item routerLink="/outbox" routerLinkActive="active">
+        <mat-icon matListItemIcon>outbox</mat-icon>
+        <div class="label" matListItemTitle>Outbox</div>
+      </a>
+      <a mat-list-item routerLink="/replayed" routerLinkActive="active">
+        <mat-icon matListItemIcon>history</mat-icon>
+        <div class="label" matListItemTitle>Replayed</div>
+      </a>
+      <mat-divider></mat-divider>
+      <a mat-list-item routerLink="/settings" routerLinkActive="active">
+        <mat-icon matListItemIcon>settings</mat-icon>
+        <div class="label" matListItemTitle>Settings</div>
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <!-- MAIN -->
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <span>Messages Console</span>
+      <span class="toolbar-spacer"></span>
+    </mat-toolbar>
+
+    <!-- Contenu + tiroir droit -->
+    <mat-drawer-container autosize class="main-with-detail">
+      <mat-drawer-content>
+        <div class="container">
+          <!-- Filtres -->
+          <mat-card appearance="outlined" class="card">
+            <mat-card-title>Search</mat-card-title>
+            <mat-card-content class="filters">
+              <!-- 1ère ligne -->
+              <!-- LIGNE 1 — tout sur une seule ligne -->
+              <!-- LIGNE 1 — tout sur une seule ligne -->
+              <div class="filters-row">
+                <!-- bloc gauche : les champs -->
+                <div class="filters-left">
+                  <mat-form-field class="w-170" appearance="outline">
+                    <mat-label>Direction</mat-label>
+                    <mat-select [formControl]="form.controls.direction">
+                      <mat-option value="Incoming">Incoming</mat-option>
+                      <mat-option value="Outgoing">Outgoing</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+
+                  <mat-form-field class="w-170" appearance="outline">
+                    <mat-label>Network</mat-label>
+                    <mat-select [formControl]="form.controls.network">
+                      <mat-option value="SWIFT">SWIFT</mat-option>
+                      <mat-option value="SEPA">SEPA</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+
+                  <mat-form-field class="w-130" appearance="outline">
+                    <mat-label>Type</mat-label>
+                    <input matInput [formControl]="form.controls.type" />
+                  </mat-form-field>
+
+                  <mat-form-field class="w-180" appearance="outline">
+                    <mat-label>Start date</mat-label>
+                    <input matInput [matDatepicker]="dp1" [formControl]="form.controls.start" />
+                    <mat-datepicker-toggle matIconSuffix [for]="dp1"></mat-datepicker-toggle>
+                    <mat-datepicker #dp1></mat-datepicker>
+                  </mat-form-field>
+
+                  <mat-form-field class="w-180" appearance="outline">
+                    <mat-label>Stop date</mat-label>
+                    <input matInput [matDatepicker]="dp2" [formControl]="form.controls.stop" />
+                    <mat-datepicker-toggle matIconSuffix [for]="dp2"></mat-datepicker-toggle>
+                    <mat-datepicker #dp2></mat-datepicker>
+                  </mat-form-field>
+                </div>
+
+                <!-- bloc droit : les icônes, cases et bouton -->
+                <div class="filters-right">
+
+
+                  <span class="v-nudge">
+                    <button mat-icon-button class="icon-square" matTooltip="Quick search">
+                      <mat-icon>search</mat-icon>
+                    </button>
+                  </span>
+
+                  <span class="v-nudge">
+                    <button mat-icon-button class="icon-square" matTooltip="Reset filters">
+                      <mat-icon>refresh</mat-icon>
+                    </button>
+                  </span>
+                  <span class="v-nudge-checkbox">
+                    <mat-checkbox [formControl]="form.controls.replayed">Replayed</mat-checkbox>
+                  </span>
+
+                  <span class="v-nudge-checkbox">
+                    <mat-checkbox [formControl]="form.controls.countOnly">Count only</mat-checkbox>
+                  </span>
+
+                  <span class="v-nudge">
+                    <button mat-stroked-button color="primary" class="more-btn" (click)="toggleAdvancedSearch()">
+                      <mat-icon style="margin-right:4px;">{{ showAdvanced ? 'expand_less' : 'expand_more' }}</mat-icon>
+                      More search
+                    </button>
+                  </span>
+                </div>
+              </div>
+
+
+              <!-- LIGNE 2 — champs avancés -->
+              <div class="advanced-search" *ngIf="showAdvanced">
+                <mat-form-field appearance="outline" class="w-260">
+                  <mat-label>Sender</mat-label>
+                  <input matInput [formControl]="form.controls.sender" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-260">
+                  <mat-label>Receiver</mat-label>
+                  <input matInput [formControl]="form.controls.receiver" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-260">
+                  <mat-label>External reference</mat-label>
+                  <input matInput [formControl]="form.controls.extRef" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-260">
+                  <mat-label>Internal reference</mat-label>
+                  <input matInput [formControl]="form.controls.intRef" />
+                </mat-form-field>
+              </div>
+
+              <!-- LIGNE 3 — actions seules, à droite -->
+              <div class="actions-row">
+                <button mat-stroked-button (click)="form.reset()">Reset</button>
+                <button mat-flat-button color="primary" (click)="search()">Search</button>
+              </div>
+
+
+
+
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Résultats -->
+          <mat-card appearance="outlined" class="card">
+            <mat-card-title class="results-title">
+              <span>Results {{ total | number }}</span>
+              <button mat-icon-button aria-label="Results actions" (click)="openResultsMenu($event)">
+                <mat-icon>keyboard_arrow_down</mat-icon>
+              </button>
+            </mat-card-title>
+            <mat-card-content>
+              <div class="ag-theme-quartz" style="height: 560px; width: 100%;">
+                <ag-grid-angular [columnDefs]="columnDefs" [defaultColDef]="defaultColDef" [rowData]="rowData"
+                  (gridReady)="onGridReady($event)" (cellClicked)="onCellClicked($event)"
+                  (rowClicked)="onRowClicked($event)" rowSelection="single" [animateRows]="true">
+                </ag-grid-angular>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-drawer-content>
+
+      <!-- TIROIR DETAIL (droite) -->
+      <mat-drawer position="end" mode="side" [opened]="rightOpen" class="detail-drawer">
+        <div class="detail-header">
+          <div class="title">
+            <mat-icon>description</mat-icon>
+            <span>Message detail</span>
+          </div>
+          <button mat-icon-button (click)="closeDetail()" aria-label="Close">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <mat-tab-group>
+          <mat-tab label="Detail">
+            <div class="detail-body" *ngIf="selectedRow; else noSel">
+              <div class="kv"><span>Ext. reference</span><b>{{ selectedRow.extRef }}</b></div>
+              <div class="kv"><span>Int. reference</span><b>{{ selectedRow.intRef }}</b></div>
+              <div class="kv"><span>Status</span><b>{{ selectedRow.status }}</b></div>
+              <div class="kv"><span>Direction</span><b>{{ selectedRow.direction }}</b></div>
+              <div class="kv"><span>Network</span><b>{{ selectedRow.network }}</b></div>
+              <div class="kv"><span>Sender</span><b>{{ selectedRow.sender }}</b></div>
+              <div class="kv"><span>Receiver</span><b>{{ selectedRow.receiver }}</b></div>
+              <div class="kv"><span>Start</span><b>{{ selectedRow.start }}</b></div>
+              <div class="kv"><span>Stop</span><b>{{ selectedRow.stop }}</b></div>
+              <div class="kv"><span>Owner</span><b>{{ selectedRow.owner }}</b></div>
+            </div>
+            <ng-template #noSel>
+              <div class="placeholder">Select a message to see details.</div>
+            </ng-template>
+          </mat-tab>
+
+          <mat-tab label="History">
+            <div class="timeline">
+              <div class="tl-item" *ngFor="let h of history; let i = index">
+                <div class="tl-marker">
+                  <span class="dot"></span>
+                  <span class="line" *ngIf="i < history.length - 1"></span>
+                </div>
+
+                <div class="tl-card">
+                  <div class="tl-head">
+                    <span class="tl-when">{{ h.when }}</span>
+                    <span class="tl-who">{{ h.who }}</span>
+                  </div>
+                  <div class="tl-action">{{ h.action }}</div>
+                </div>
+              </div>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+      </mat-drawer>
+    </mat-drawer-container>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+<!-- ================== OVERLAYS HORS CONTAINERS ================== -->
+
+<!-- Menu de LIGNE (colonne Direction) -->
+<div *ngIf="rowMenuOpen" class="row-menu" [ngStyle]="{ left: rowMenuX + 'px', top: rowMenuY + 'px' }"
+  (click)="$event.stopPropagation()" (mouseleave)="scheduleCloseSubmenu()" (mouseenter)="cancelCloseSubmenu()">
+
+  <button class="mini-item mini-row" (click)="editSelectedRow()">
+    <span class="material-icons">edit</span>
+    <span>Edit message</span>
+  </button>
+
+  <button class="mini-item mini-row" (click)="replayRow()">
+    <span class="material-icons">replay</span>
+    <span>Replay</span>
+  </button>
+
+  <button class="mini-item mini-row" (mouseenter)="openRowSubmenu($event, 'view')"
+    (mouseleave)="scheduleCloseSubmenu()">
+    <span>View</span>
+    <span class="material-icons">chevron_right</span>
+  </button>
+
+  <button class="mini-item mini-row" (mouseenter)="openRowSubmenu($event, 'export')"
+    (mouseleave)="scheduleCloseSubmenu()">
+    <span>Export</span>
+    <span class="material-icons">chevron_right</span>
+  </button>
+</div>
+
+<!-- Sous-menu (View / Export) -->
+<div *ngIf="rowSubOpen" class="row-submenu" [ngStyle]="{ left: rowSubX + 'px', top: rowSubY + 'px' }"
+  (mouseenter)="cancelCloseSubmenu()" (mouseleave)="scheduleCloseSubmenu()" (click)="$event.stopPropagation()">
+
+  <ng-container [ngSwitch]="rowSubKind">
+    <ng-container *ngSwitchCase="'view'">
+      <button class="mini-item" (click)="viewBody()">Body</button>
+      <button class="mini-item" (click)="viewBodyHex()">Body in hexa</button>
+      <button class="mini-item" (click)="viewDecodedHeader()">Decoded header</button>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'export'">
+      <button class="mini-item" (click)="exportBody()">Body</button>
+      <button class="mini-item" (click)="exportBodyHex()">Body in hexa</button>
+      <button class="mini-item" (click)="exportDecodedHeader()">Decoded header</button>
+    </ng-container>
+  </ng-container>
+</div>
+
+<!-- Backdrop commun pour fermer -->
+<div *ngIf="rowMenuOpen || rowSubOpen" class="mini-backdrop" (click)="closeRowMenus()"></div>
+
+<!-- Menu des résultats -->
+<div *ngIf="resultsMenuOpen" class="results-menu" [ngStyle]="{ left: resultsMenuX + 'px', top: resultsMenuY + 'px' }"
+  (click)="$event.stopPropagation()">
+  <button class="mini-item" (click)="exportExcelAll()">Export Excel all</button>
+</div>
+<div *ngIf="resultsMenuOpen" class="mini-backdrop" (click)="closeResultsMenu()"></div>

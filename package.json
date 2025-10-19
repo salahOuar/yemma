@@ -1,0 +1,35 @@
+{
+  "name": "angular20-console",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
+  },
+  "dependencies": {
+    "@angular/animations": "20.2.0",
+    "@angular/common": "20.2.0",
+    "@angular/compiler": "20.2.0",
+    "@angular/core": "20.2.0",
+    "@angular/forms": "20.2.0",
+    "@angular/platform-browser": "20.2.0",
+    "@angular/platform-browser-dynamic": "20.2.0",
+    "@angular/router": "20.2.0",
+    "@angular/material": "20.2.1",
+    "@angular/cdk": "20.2.1",
+    "rxjs": "^7.8.1",
+    "tslib": "^2.6.2",
+    "zone.js": "~0.15.1",
+    "ag-grid-community": "^32.3.2",
+    "ag-grid-angular": "^32.3.2",
+    "ag-grid-enterprise": "^32.3.2"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "20.2.1",
+    "@angular/cli": "20.2.1",
+    "@angular/compiler-cli": "20.2.0",
+    "typescript": "^5.8.0"
+  }
+}

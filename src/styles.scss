@@ -1,0 +1,138 @@
+@use '@angular/material' as mat;
+@import "ag-grid-community/styles/ag-grid.css";
+@import "ag-grid-community/styles/ag-theme-quartz.css";
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+$primary: mat.m2-define-palette(mat.$m2-blue-grey-palette, 700);
+$accent: mat.m2-define-palette(mat.$m2-cyan-palette);
+$warn: mat.m2-define-palette(mat.$m2-red-palette);
+
+$theme: mat.m2-define-light-theme((color: (primary: $primary, accent: $accent, warn: $warn ),
+      typography: mat.m2-define-typography-config($font-family: 'Inter, Roboto, Arial, sans-serif'),
+      density: 0));
+
+
+
+
+@include mat.core();
+@include mat.all-component-themes($theme);
+
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.card {
+  margin-top: 12px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 12px;
+  align-items: end;
+
+  .c-2 {
+    grid-column: span 2;
+  }
+
+  .c-3 {
+    grid-column: span 3;
+  }
+
+  .c-4 {
+    grid-column: span 4;
+  }
+
+  .c-6 {
+    grid-column: span 6;
+  }
+
+  .c-12 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1200px) {
+  .filters {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .filters .c-3,
+  .filters .c-4,
+  .filters .c-6 {
+    grid-column: 1 / -1;
+  }
+}
+
+.sidenav {
+  width: 260px;
+  border-right: 1px solid rgba(0, 0, 0, .06);
+
+  &.collapsed {
+    width: 72px;
+  }
+}
+
+.sidenav .mat-mdc-list-item {
+  height: 44px;
+}
+
+.sidenav .label {
+  opacity: 1;
+  transition: opacity .15s;
+}
+
+.sidenav.collapsed .label {
+  opacity: 0;
+}
+
+.ag-theme-material {
+  --ag-foreground-color: #2f2f2f;
+  --ag-background-color: #fff;
+  --ag-header-background-color: #fafafa;
+  --ag-header-foreground-color: #666;
+  --ag-border-color: #eee;
+  --ag-row-hover-color: #f5f7fb;
+  --ag-selected-row-background-color: #eaf2ff;
+  --ag-odd-row-background-color: #fff;
+  --ag-font-family: Inter, Roboto, Arial, sans-serif;
+  --ag-font-size: 13px;
+}
+
+/* Style fin de la surface du dialog */
+.edit-dialog .mat-mdc-dialog-surface {
+  border-radius: 16px;
+}
+
+/* Limite la zone scrollable au contenu, pas à l’entête/actions */
+.edit-dialog .mat-mdc-dialog-content {
+  max-height: calc(85vh - 120px);
+  /* 85vh moins header+actions */
+  overflow: auto;
+  padding-right: 8px;
+  /* évite scrollbar collée */
+}
+
+/* --- Fix global pour permettre les overlays (mini-menu, dialogs, etc.) --- */
+.mat-sidenav-container,
+.mat-sidenav-content,
+.mat-drawer-container {
+  overflow: visible !important;
+  z-index: auto;
+  position: relative;
+}

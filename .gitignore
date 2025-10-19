@@ -1,0 +1,30 @@
+# ========================================
+# Dépendances et builds Angular
+# ========================================
+node_modules/
+dist/
+.angular/
+tmp/
+out-tsc/
+
+# Cache Angular CLI
+.angular/cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environnements
+.env
+.env.local
+.env.*.local
+
+# IDE / Éditeurs
+.vscode/
+.idea/
+.DS_Store
+
+# Autres fichiers temporaires
+coverage/

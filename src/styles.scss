@@ -1,351 +1,267 @@
-/* ====================== Layout général ====================== */
-.grid-host {
-  height: 600px;
-  width: 100%;
+@use '@angular/material' as mat;
+@import "ag-grid-community/styles/ag-grid.css";
+@import "ag-grid-community/styles/ag-theme-quartz.css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+
+
+/* Variables CSS globales */
+:root {
+  --font-family-base: 'Inter', sans-serif;
+  --font-size-base: 14px;
+  --line-height-base: 20px;
+  --text-color-base: #27272A;
+  --background-color-base: #ffffff;
+  --primary-color: #0284C7; // Couleur principale (ex: bleu IBM)
 }
 
-.ag-theme-quartz ag-grid-angular {
+/* Style global du body */
+
+html,
+body {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--text-color-base);
+  background-color: var(--background-color-base);
+  margin: 0;
+  padding: 0;
   height: 100%;
-  width: 100%;
-  display: block;
 }
 
-/* ====================== Toolbar & Sidebar ====================== */
-mat-toolbar .mat-icon {
-  transition: transform 0.2s ease;
+.mat-icon {
+  color: var(--component-button-secondary-default-color-icon, #27272A);
 }
 
-button[mat-icon-button]:hover .mat-icon {
-  transform: scale(1.15);
+.mat-toolbar.mat-primary {
+  background-color: white !important;
+
 }
 
+/* Style global pour Angular Material */
+.mat-toolbar,
+.mat-list-item,
+.mat-nav-list,
+.mat-sidenav {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  color: var(--text-color-base);
+  --mat-toolbar-container-background-color: ;
+}
 
-.sidenav .side-toolbar {
-  position: relative;
-  height: 56px;
+/* Classes personnalisées */
+.label {
+  flex: 1 1 0 !important;
+  justify-content: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  color: var(--text-color-base) !important;
+  font-size: 14px !important;
+  font-family: Inter !important;
+  font-weight: 700 !important;
+  line-height: 20px !important;
+  word-wrap: break-word !important;
+}
+
+.sidenav {
+  width: 224px;
+  background-color: var(--background-color-base);
+}
+
+.side-toolbar {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  padding: 0 48px 0 8px;
+  padding: 0 12px;
+  height: 64px;
+  background-color: var(--primary-color);
+  color: white;
 }
 
-.sidenav .collapse-btn {
-  position: absolute;
-  right: 8px;
-  color: #fff;
-  z-index: 2;
+.collapse-btn {
+  width: 32px;
+  height: 32px;
+}
+
+
+
+$primary: mat.m2-define-palette(mat.$m2-blue-grey-palette, 700);
+$accent: mat.m2-define-palette(mat.$m2-cyan-palette);
+$warn: mat.m2-define-palette(mat.$m2-red-palette);
+
+$theme: mat.m2-define-light-theme((color: (primary: $primary, accent: $accent, warn: $warn ),
+      typography: mat.m2-define-typography-config($font-family: 'Inter, Roboto, Arial, sans-serif'),
+      density: 0));
+
+
+
+
+@include mat.core();
+@include mat.all-component-themes($theme);
+
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.card {
+  margin-top: 12px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 12px;
+  align-items: end;
+
+  .c-2 {
+    grid-column: span 2;
+  }
+
+  .c-3 {
+    grid-column: span 3;
+  }
+
+  .c-4 {
+    grid-column: span 4;
+  }
+
+  .c-6 {
+    grid-column: span 6;
+  }
+
+  .c-12 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1200px) {
+  .filters {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .filters .c-3,
+  .filters .c-4,
+  .filters .c-6 {
+    grid-column: 1 / -1;
+  }
+}
+
+.sidenav {
+  width: 260px;
+  border-right: 1px solid rgba(0, 0, 0, .06);
+
+  &.collapsed {
+    width: 72px;
+  }
+}
+
+.sidenav .mat-mdc-list-item {
+  height: 44px;
 }
 
 .sidenav .label {
-  margin-right: 12px;
-  white-space: nowrap;
-  transition: opacity .15s ease, width .15s ease, margin-right .15s ease;
+  opacity: 1;
+  transition: opacity .15s;
 }
 
 .sidenav.collapsed .label {
   opacity: 0;
-  width: 0;
-  margin-right: 0;
-  overflow: hidden;
 }
 
-/* ====================== Drawer de droite ====================== */
-.detail-drawer {
-  width: 520px;
-  max-width: 90vw;
-  padding: 12px;
+.ag-theme-material {
+  --ag-foreground-color: #2f2f2f;
+  --ag-background-color: #fff;
+  --ag-header-background-color: #fafafa;
+  --ag-header-foreground-color: #666;
+  --ag-border-color: #eee;
+  --ag-row-hover-color: #f5f7fb;
+  --ag-selected-row-background-color: #eaf2ff;
+  --ag-odd-row-background-color: #fff;
+  --ag-font-family: Inter, Roboto, Arial, sans-serif;
+  --ag-font-size: 13px;
+}
+
+/* Style fin de la surface du dialog */
+.edit-dialog .mat-mdc-dialog-surface {
+  border-radius: 16px;
+}
+
+/* Limite la zone scrollable au contenu, pas à l’entête/actions */
+.edit-dialog .mat-mdc-dialog-content {
+  max-height: calc(85vh - 120px);
+  /* 85vh moins header+actions */
+  overflow: auto;
+  padding-right: 8px;
+  /* évite scrollbar collée */
+}
+
+/* --- Fix global pour permettre les overlays (mini-menu, dialogs, etc.) --- */
+.mat-sidenav-container,
+.mat-sidenav-content,
+.mat-drawer-container {
+  overflow: visible !important;
+  z-index: auto;
+  position: relative;
+}
+
+
+/* Empêche le scroll horizontal */
+mat-sidenav-content,
+.main-with-detail,
+.container {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Conteneur principal */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
   box-sizing: border-box;
 }
 
-.detail-header {
+/* Ligne de filtres */
+.filters-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(0, 0, 0, .08);
-}
-
-.detail-header .title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
-
-.detail-body {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  padding: 12px 0;
-}
-
-.detail-body .kv {
-  display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
 }
 
-.detail-body .kv span {
-  color: #666;
-}
-
-.detail-body .kv b {
-  font-weight: 600;
-}
-
-.history-list {
-  display: grid;
-  gap: 10px;
-  padding: 12px 0;
-}
-
-.history-list .h-item {
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: #f7f9fc;
-}
-
-.history-list .h-when {
-  font-size: 12px;
-  color: #666;
-}
-
-.history-list .h-action {
-  margin-top: 2px;
-}
-
-/* ====================== Cellule Direction ====================== */
-.dir-cell {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.dir-cell .row-actions {
-  display: inline-flex;
-  gap: 6px;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(3px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.dir-cell .action-icon {
-  font-size: 18px;
-  cursor: pointer;
-  opacity: .75;
-  transition: opacity 0.15s ease;
-}
-
-.dir-cell .action-icon:hover {
-  opacity: 1;
-}
-
-.ag-row-hover .row-actions,
-.ag-row:hover .row-actions {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-/* ====================== Overlays / Menus ====================== */
-.mat-drawer-container,
-.mat-sidenav-container,
-.mat-sidenav-content {
-  overflow: visible !important;
-}
-
-.results-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.results-menu,
-.row-menu,
-.row-submenu {
-  position: fixed;
-  background: #f2f2f2;
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
-  padding: 6px;
-  animation: fadeIn 0.15s ease;
-}
-
-.results-menu {
-  z-index: 999999;
-  min-width: 180px;
-}
-
-.row-menu {
-  z-index: 1000000;
-  min-width: 220px;
-}
-
-.row-submenu {
-  z-index: 1000001;
-  min-width: 240px;
-  transition: opacity 0.15s ease;
-}
-
-.mini-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  background: transparent;
-  border: none;
-  padding: 8px 10px;
-  border-radius: 6px;
-  font: inherit;
-  cursor: pointer;
-  text-align: left;
-  transition: background-color 0.2s ease;
-}
-
-.mini-item:hover {
-  background-color: #e6e6e6;
-}
-
-.mini-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.mini-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 999998;
-  background: transparent;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ====================== Section Search ====================== */
-:root {
-  --field-h: 56px;
-  --search-offset: 10px;
-  /* 👈 parfait pour l’alignement vertical */
-}
-
-/* ====================== Ligne principale ====================== */
-.filters-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  width: 100%;
-  gap: 4px;
-  /* 👈 réduit encore l’espace global */
-}
-
-/* Bloc gauche (champs) */
+/* Bloc gauche : champs */
 .filters-left {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
-  /* 👈 rapproche les champs entre eux */
+  flex-wrap: wrap;
+  gap: 12px;
   flex: 1;
-  flex-wrap: nowrap;
   min-width: 0;
 }
 
-/* Bloc droit (checkboxes + icônes + bouton) */
+/* Bloc droit : icônes et boutons */
 .filters-right {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
-  gap: 6px;
-  /* 👈 réduit le vide entre Stop date et les cases/icônes */
-  flex-shrink: 0;
-}
-
-/* Largeurs ajustées */
-.w-130 {
-  width: 120px;
-}
-
-.w-170 {
-  width: 150px;
-}
-
-/* encore un peu plus compact */
-.w-180 {
-  width: 165px;
-}
-
-.w-260 {
-  width: 260px;
-}
-
-/* ✅ Cases à cocher */
-.cb-align {
-  position: relative;
-  top: var(--search-offset);
-  display: inline-flex;
-  align-items: center;
-}
-
-.cb-align .mdc-form-field {
-  display: flex;
-  align-items: center;
-  margin: 0;
-  line-height: 1;
-}
-
-/* ✅ Icônes */
-.icon-square {
-  width: 36px;
-  height: 36px;
-  border: 1px solid rgba(0, 0, 0, .15);
-  border-radius: 8px;
-  background: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease;
-  position: relative;
-  top: var(--search-offset);
-}
-
-.icon-square:hover {
-  background-color: #f5f5f5;
-}
-
-/* ✅ Bouton More search */
-.more-btn {
-  height: 36px;
-  line-height: 36px;
-  padding: 0 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: background-color 0.2s ease;
-  position: relative;
-  top: var(--search-offset);
 }
 
 /* Champs avancés */
 .advanced-search {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 12px;
-  flex-wrap: wrap;
 }
 
-/* Boutons Search / Reset */
+/* Ligne des actions */
 .actions-row {
   display: flex;
   justify-content: flex-end;
@@ -353,454 +269,66 @@ button[mat-icon-button]:hover .mat-icon {
   margin-top: 12px;
 }
 
-/* ======= Overrides pour élargir la zone de gauche (Direction/Network/Type/Dates) ======= */
-
-/* la rangée reste sur toute la largeur */
-.filters-row {
-  gap: 6px;
-}
-
-/* le bloc gauche prend un peu plus d’espace */
-.filters-left {
+/* Largeurs des champs */
+.w-130,
+.w-170,
+.w-180,
+.w-260 {
+  min-width: 130px;
   flex: 1 1 auto;
-  /* s'étire davantage */
-  gap: 10px;
-  /* un poil plus d’air entre les champs */
-  min-width: 0;
 }
 
-/* le bloc droit reste compact, collé au bloc gauche */
-.filters-right {
-  flex-shrink: 0;
-  gap: 8px;
+/* Boutons carrés */
+.icon-square {
+  width: 32px;
+  height: 32px;
 }
 
-/* 👇 Augmente la largeur des champs de gauche */
-.w-130 {
-  width: 160px;
-}
-
-/* Type (avant 120)   */
-.w-170 {
-  width: 200px;
-}
-
-/* Direction/Network (avant 150/160) */
-.w-180 {
-  width: 220px;
-}
-
-/* Start/Stop (avant 165/170) */
-
-/* Optionnel : si tu veux que les dates puissent s'étirer un peu quand il y a de la place */
-.w-180 {
-  flex: 0 0 220px;
-  /* base 220px */
-  max-width: 260px;
-  /* peut gagner un peu si la place existe */
-}
-
-/* ===== Timeline (History) ===== */
-.timeline {
-  position: relative;
-  display: grid;
-  gap: 14px;
-  padding: 12px 4px 4px 4px;
-}
-
-/* Un item = marker (gauche) + carte (droite) */
-.tl-item {
-  display: grid;
-  grid-template-columns: 24px 1fr;
-  column-gap: 12px;
-  align-items: flex-start;
-}
-
-/* Colonne gauche : point + ligne */
-.tl-marker {
-  position: relative;
-  min-height: 20px;
-
-  .dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    display: inline-block;
-    background: var(--tl-dot, #1976d2);
-    /* primaire Material par défaut */
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, .12);
-    position: relative;
-    top: 2px;
-    left: 6px;
-    /* centre dans la colonne */
-  }
-
-  .line {
-    position: absolute;
-    left: 11px;
-    /* alignée au centre du dot */
-    top: 18px;
-    /* part sous le dot */
-    width: 2px;
-    height: calc(100% - 6px);
-    background: linear-gradient(#e3e7ee, #dfe4ec);
-    border-radius: 2px;
-  }
-}
-
-/* Carte de droite */
-.tl-card {
-  background: #f8fafc;
-  border: 1px solid #e6edf5;
-  border-radius: 10px;
-  padding: 10px 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
-
-  /* Adaptation auto si thème sombre */
-  @media (prefers-color-scheme: dark) {
-    background: #1e293b;
-    border-color: #334155;
-  }
-}
-
-/* En-tête : date à gauche, auteur à droite */
-.tl-head {
+/* Nudge vertical */
+.v-nudge,
+.v-nudge-checkbox {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 4px;
-
-  .tl-when {
-    font-size: 12px;
-    color: #607d8b;
-    letter-spacing: .2px;
-  }
-
-  .tl-who {
-    font-weight: 600;
-    font-size: 13px;
-    color: #37474f;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .tl-when {
-      color: #93a3af;
-    }
-
-    .tl-who {
-      color: #e2e8f0;
-    }
-  }
-}
-
-/* Action / description */
-.tl-action {
-  font-size: 14px;
-  color: #263238;
-
-  @media (prefers-color-scheme: dark) {
-    color: #e5e7eb;
-  }
-}
-
-/* Densité compacte si tu as beaucoup d’items */
-.timeline.compact {
-  gap: 10px;
-
-  .tl-card {
-    padding: 8px 10px;
-  }
-
-  .tl-head {
-    margin-bottom: 2px;
-  }
-
-  .tl-action {
-    font-size: 13px;
-  }
-}
-
-
-
-
-.mat-nav-list {
-  width: 224px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0;
-
-  a.mat-list-item {
-    height: 32px;
-    padding: 0 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 4px;
-    overflow: hidden;
-    outline: 1px solid transparent;
-    outline-offset: -1px;
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 20px;
-    color: var(--component-navigation-views-label, #27272A);
-
-    &.active {
-      background-color: var(--general-background-overlay-color, rgba(2, 132, 199, 0.12));
-      font-weight: 700;
-    }
-
-    .mat-icon {
-      font-size: 16px;
-      color: var(--component-navigation-views-label, #27272A);
-    }
-
-    .label {
-      flex: 1 1 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      word-wrap: break-word;
-    }
-  }
-}
-
-.nav-section {
-  width: 224px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-
-  .nav-group-title {
-    height: 40px;
-    padding: 6px 12px;
-    font-family: 'Inter', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 18px;
-    color: var(--general-text-secondary, #71717A);
-    display: flex;
-    align-items: flex-end;
-  }
-
-  a.mat-list-item {
-    height: 32px;
-    padding: 0 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 4px;
-    overflow: hidden;
-    outline: 1px solid transparent;
-    outline-offset: -1px;
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 20px;
-    color: var(--component-navigation-views-label, #27272A);
-
-    &.active {
-      background-color: var(--general-background-overlay-color, rgba(2, 132, 199, 0.12));
-      font-weight: 700;
-    }
-
-    .mat-icon {
-      font-size: 16px;
-      color: var(--component-navigation-views-label, #27272A);
-    }
-
-    .label {
-      flex: 1 1 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      word-wrap: break-word;
-    }
-  }
-}
-
-
-.form-fields-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  width: 100%;
-}
-
-
-
-
-
-
-.side-modal {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
-  width: 100%;
-  /* laisse 100px à gauche pour voir la ligne sélectionnée */
-  background: white;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  animation: slideIn 0.3s ease-out;
-}
-
-.left-modal {
-  width: calc(100% - 200px);
-  /* laisse 100px à gauche */
-  height: 100%;
-  background: white;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  animation: slideInFromRight 0.3s ease-out;
-}
-
-@keyframes slideInFromRight {
-  from {
-    transform: translateX(100%);
-  }
-
-  to {
-    transform: translateX(0);
-  }
-}
-
-.modal-controls {
-  position: absolute;
-  top: 10px;
-  left: -50px;
-  z-index: 1001;
-}
-
-.modal-navigation {
-  position: absolute;
-  top: 60px;
-  left: -50px;
-  z-index: 1001;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.modal-toolbar {
-  position: absolute;
-  right: 16px;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  box-shadow: 0px 4px 6px -2px rgba(0, 0, 0, 0.05), 0px 10px 15px -3px rgba(0, 0, 0, 0.1);
- 
-  display: flex;
-  flex-direction: column;
- width: 100%;
-  z-index: 1001;
-  outline: 1px solid #ddd;
-}
-
-
-
-.modal-toolbar-floating {
-  position: absolute;
-  top: 0;
-  right: calc(100% - 100px); /* collé à gauche de la modale */
-  width: 100px;
-  height: 100%;
-  background-color: #f9f9f9;
-  border-radius: 6px 0 0 6px;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  justify-content: start;
   align-items: center;
-  padding-top: 16px;
-  z-index: 1001;
 }
 
+@media (max-width: 768px) {
 
-.drawer-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
+  .filters-row,
+  .filters-left,
+  .filters-right,
+  .advanced-search,
+  .actions-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .icon-square {
+    align-self: flex-start;
+  }
+}
+
+.empty-state {
   width: 100%;
-  height: 100%;
-  z-index: 999; /* juste en dessous du drawer */
-  background-color: transparent;
-  pointer-events: all; /* bloque les clics */
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.menu-item mat-icon {
-  font-size: 20px;
-}
-
-
-
-.modal-toolbar {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: start;
-  align-items: center;
- 
-}
-
-
-.toolbar-drawer {
-  width: 200px;
-  background-color: transparent !important;
-  box-shadow: none !important;
-  pointer-events: none; // pour ne pas bloquer les clics derrière si nécessaire
-}
-
-.modal-toolbar {
-  pointer-events: auto; // pour que les boutons soient cliquables
-}
-
-.white-icon {
-  background-color: white;
-  border-radius: 50%;
-  padding: 4px;
-}
-
-
-
-.menu-item {
+  padding: 2rem;
+  text-align: center;
+  color: #71717A;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  gap: 1rem;
 }
 
-.menu-item:hover {
-  background-color: #e0e0e0;
+.icon-empty {
+  font-size: 3rem;
 }
 
-
-.drawer-container {
-  position: relative;
+.main-title {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: #27272A;
 }
 
-.drawer-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 998; /* juste en dessous des drawers */
-  background-color: rgba(0, 0, 0, 0.05); /* léger voile */
-  pointer-events: all; /* bloque les clics */
-}
-
-.disabled {
-  pointer-events: none; /* empêche les interactions */
-  user-select: none;    /* empêche la sélection */
-  opacity: 1;           /* reste visible */
+.description {
+  font-size: 0.95rem;
+  color: #71717A;
 }

@@ -1,53 +1,38 @@
 <mat-sidenav-container style="height:100vh;">
   <!-- SIDEBAR -->
-  <mat-sidenav #sidenav mode="side" opened class="sidenav" [class.collapsed]="collapsed">
+  <mat-sidenav #sidenav mode="side" opened class="sidenav title" [class.collapsed]="collapsed">
     <mat-toolbar color="primary" class="side-toolbar">
-      <mat-icon>inbox</mat-icon>
-      <span class="label">Messages</span>
+      <span class="label">IBM</span>
       <button mat-icon-button class="collapse-btn" (click)="toggleCollapse()" aria-label="Collapse sidebar">
         <mat-icon>{{ collapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
       </button>
     </mat-toolbar>
+    <mat-nav-list class="nav-section">
+      <!-- Section Title -->
+      <div class="nav-group-title">Messages</div>
 
-    <mat-nav-list>
+      <!-- Navigation Items -->
       <a mat-list-item routerLink="/search" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
         <mat-icon matListItemIcon>search</mat-icon>
         <div class="label" matListItemTitle>Search</div>
       </a>
-      <a mat-list-item routerLink="/inbox" routerLinkActive="active">
-        <mat-icon matListItemIcon>inbox</mat-icon>
-        <div class="label" matListItemTitle>Inbox</div>
+
+      <a mat-list-item routerLink="/import" routerLinkActive="active">
+        <mat-icon matListItemIcon>download</mat-icon>
+        <div class="label" matListItemTitle>Download</div>
       </a>
-      <a mat-list-item routerLink="/outbox" routerLinkActive="active">
-        <mat-icon matListItemIcon>outbox</mat-icon>
-        <div class="label" matListItemTitle>Outbox</div>
-      </a>
-      <a mat-list-item routerLink="/replayed" routerLinkActive="active">
-        <mat-icon matListItemIcon>history</mat-icon>
-        <div class="label" matListItemTitle>Replayed</div>
-      </a>
-      <mat-divider></mat-divider>
-      <a mat-list-item routerLink="/settings" routerLinkActive="active">
-        <mat-icon matListItemIcon>settings</mat-icon>
-        <div class="label" matListItemTitle>Settings</div>
-      </a>
+
     </mat-nav-list>
   </mat-sidenav>
 
   <!-- MAIN -->
   <mat-sidenav-content>
-    <mat-toolbar color="primary">
-      <span>Messages Console</span>
-      <span class="toolbar-spacer"></span>
-    </mat-toolbar>
-
     <!-- Contenu + tiroir droit -->
-    <mat-drawer-container autosize class="main-with-detail">
-      <mat-drawer-content>
+    <mat-drawer-container autosize class="main-with-detail drawer-container">
+      <mat-drawer-content [class.disabled]="leftOpen">
         <div class="container">
           <!-- Filtres -->
           <mat-card appearance="outlined" class="card">
-            <mat-card-title>Search</mat-card-title>
             <mat-card-content class="filters">
               <!-- 1ère ligne -->
               <!-- LIGNE 1 — tout sur une seule ligne -->
@@ -55,37 +40,37 @@
               <div class="filters-row">
                 <!-- bloc gauche : les champs -->
                 <div class="filters-left">
-                  <mat-form-field class="w-170" appearance="outline">
+                  <mat-form-field appearance="outline">
                     <mat-label>Direction</mat-label>
                     <mat-select [formControl]="form.controls.direction">
-                      <mat-option value="Incoming">Incoming</mat-option>
-                      <mat-option value="Outgoing">Outgoing</mat-option>
+                      <mat-option value="INCOMING">Incoming</mat-option>
+                      <mat-option value="OUTGOING">Outgoing</mat-option>
                     </mat-select>
                   </mat-form-field>
 
-                  <mat-form-field class="w-170" appearance="outline">
+                  <mat-form-field appearance="outline">
                     <mat-label>Network</mat-label>
-                    <mat-select [formControl]="form.controls.network">
+                    <mat-select [formControl]="form.controls.network" multiple>
                       <mat-option value="SWIFT">SWIFT</mat-option>
                       <mat-option value="SEPA">SEPA</mat-option>
                     </mat-select>
                   </mat-form-field>
 
-                  <mat-form-field class="w-130" appearance="outline">
+                  <mat-form-field appearance="outline">
                     <mat-label>Type</mat-label>
                     <input matInput [formControl]="form.controls.type" />
                   </mat-form-field>
 
-                  <mat-form-field class="w-180" appearance="outline">
+                  <mat-form-field appearance="outline">
                     <mat-label>Start date</mat-label>
-                    <input matInput [matDatepicker]="dp1" [formControl]="form.controls.start" />
+                    <input matInput [matDatepicker]="dp1" [formControl]="form.controls.startDate" />
                     <mat-datepicker-toggle matIconSuffix [for]="dp1"></mat-datepicker-toggle>
                     <mat-datepicker #dp1></mat-datepicker>
                   </mat-form-field>
 
-                  <mat-form-field class="w-180" appearance="outline">
+                  <mat-form-field appearance="outline">
                     <mat-label>Stop date</mat-label>
-                    <input matInput [matDatepicker]="dp2" [formControl]="form.controls.stop" />
+                    <input matInput [matDatepicker]="dp2" [formControl]="form.controls.stopDate" />
                     <mat-datepicker-toggle matIconSuffix [for]="dp2"></mat-datepicker-toggle>
                     <mat-datepicker #dp2></mat-datepicker>
                   </mat-form-field>
@@ -93,16 +78,14 @@
 
                 <!-- bloc droit : les icônes, cases et bouton -->
                 <div class="filters-right">
-
-
                   <span class="v-nudge">
-                    <button mat-icon-button class="icon-square" matTooltip="Quick search">
+                    <button mat-icon-button class="icon-square" matTooltip="Quick search" (click)="search()">
                       <mat-icon>search</mat-icon>
                     </button>
                   </span>
 
                   <span class="v-nudge">
-                    <button mat-icon-button class="icon-square" matTooltip="Reset filters">
+                    <button mat-icon-button class="icon-square" matTooltip="Reset filters" (click)="form.reset()">
                       <mat-icon>refresh</mat-icon>
                     </button>
                   </span>
@@ -117,7 +100,7 @@
                   <span class="v-nudge">
                     <button mat-stroked-button color="primary" class="more-btn" (click)="toggleAdvancedSearch()">
                       <mat-icon style="margin-right:4px;">{{ showAdvanced ? 'expand_less' : 'expand_more' }}</mat-icon>
-                      More search
+                      {{ showAdvanced ? 'Less search' : 'More search' }}
                     </button>
                   </span>
                 </div>
@@ -126,32 +109,90 @@
 
               <!-- LIGNE 2 — champs avancés -->
               <div class="advanced-search" *ngIf="showAdvanced">
-                <mat-form-field appearance="outline" class="w-260">
-                  <mat-label>Sender</mat-label>
-                  <input matInput [formControl]="form.controls.sender" />
-                </mat-form-field>
+                <div class="form-fields-container">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Sub-type</mat-label>
+                    <input matInput [formControl]="form.controls.subType" />
+                  </mat-form-field>
 
-                <mat-form-field appearance="outline" class="w-260">
-                  <mat-label>Receiver</mat-label>
-                  <input matInput [formControl]="form.controls.receiver" />
-                </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Body</mat-label>
+                    <input matInput [formControl]="form.controls.body" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Owner</mat-label>
+                    <input matInput [formControl]="form.controls.owner" />
+                  </mat-form-field>
 
-                <mat-form-field appearance="outline" class="w-260">
-                  <mat-label>External reference</mat-label>
-                  <input matInput [formControl]="form.controls.extRef" />
-                </mat-form-field>
 
-                <mat-form-field appearance="outline" class="w-260">
-                  <mat-label>Internal reference</mat-label>
-                  <input matInput [formControl]="form.controls.intRef" />
-                </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>External reference</mat-label>
+                    <input matInput [formControl]="form.controls.extRef" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Internal reference</mat-label>
+                    <input matInput [formControl]="form.controls.intRef" />
+                  </mat-form-field>
+
+
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Receiver</mat-label>
+                    <input matInput [formControl]="form.controls.receiver" />
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Reception date</mat-label>
+                    <input matInput [matDatepicker]="dp2" [formControl]="form.controls.receptionDate" />
+                    <mat-datepicker-toggle matIconSuffix [for]="dp2"></mat-datepicker-toggle>
+                    <mat-datepicker #dp2></mat-datepicker>
+                  </mat-form-field>
+
+
+                </div>
+
+                <div class="form-fields-container">
+
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Sender</mat-label>
+                    <input matInput [formControl]="form.controls.sender" />
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Block name</mat-label>
+                    <input matInput [formControl]="form.controls.blockName" />
+                  </mat-form-field>
+
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>File reference</mat-label>
+                    <input matInput [formControl]="form.controls.fileRef" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Application name </mat-label>
+                    <input matInput [formControl]="form.controls.applicationName" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Internal key </mat-label>
+                    <input matInput [formControl]="form.controls.intKey" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Environnement</mat-label>
+                    <mat-select [formControl]="form.controls.environnement">
+                      <mat-option value="SWIFT">SWIFT</mat-option>
+                      <mat-option value="SEPA">SEPA</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+
+
+
               </div>
 
-              <!-- LIGNE 3 — actions seules, à droite -->
-              <div class="actions-row">
-                <button mat-stroked-button (click)="form.reset()">Reset</button>
-                <button mat-flat-button color="primary" (click)="search()">Search</button>
-              </div>
+
 
 
 
@@ -171,13 +212,47 @@
               <div class="ag-theme-quartz" style="height: 560px; width: 100%;">
                 <ag-grid-angular [columnDefs]="columnDefs" [defaultColDef]="defaultColDef" [rowData]="rowData"
                   (gridReady)="onGridReady($event)" (cellClicked)="onCellClicked($event)"
-                  (rowClicked)="onRowClicked($event)" rowSelection="single" [animateRows]="true">
+                  [overlayNoRowsTemplate]="noRowsTemplate" (rowClicked)="onRowClicked($event)" rowSelection="single"
+                  [animateRows]="true" [paginationPageSize]="pageSize" [pagination]="true" [rowModelType]="'infinite'">
                 </ag-grid-angular>
               </div>
             </mat-card-content>
           </mat-card>
         </div>
       </mat-drawer-content>
+     
+      <mat-drawer position="start" mode="over" [opened]="leftOpen" class="toolbar-drawer">
+        <div class="modal-toolbar">
+          <div class="menu-item white-icon" (click)="closeModal()" >
+            <mat-icon>close</mat-icon>
+            <span>Fermer</span>
+          </div>
+          <div class="menu-item white-icon" (click)="selectPreviousRow()">
+            <mat-icon>arrow_back</mat-icon>
+            <span>Précédent</span>
+          </div>
+          <div class="menu-item white-icon" (click)="selectNextRow()">
+            <mat-icon>arrow_forward</mat-icon>
+            <span>Suivant</span>
+          </div>
+        </div>
+      </mat-drawer>
+      <mat-drawer position="end" mode="over" [opened]="leftOpen" class="left-modal"
+        [style.width]="'calc(100% - 200px)'">
+        <div class="side-modal" *ngIf="selectedRow">
+
+          <!-- Contenu avec onglets -->
+          <mat-tab-group>
+            <mat-tab label="Onglet 1">Contenu 1</mat-tab>
+            <mat-tab label="Onglet 2">Contenu 2</mat-tab>
+            <mat-tab label="Onglet 3">Contenu 3</mat-tab>
+            <mat-tab label="Onglet 4">Contenu 4</mat-tab>
+          </mat-tab-group>
+        </div>
+      </mat-drawer>
+      
+      <!-- Barre flottante à gauche de la modale -->
+      
 
       <!-- TIROIR DETAIL (droite) -->
       <mat-drawer position="end" mode="side" [opened]="rightOpen" class="detail-drawer">
@@ -263,24 +338,7 @@
   </button>
 </div>
 
-<!-- Sous-menu (View / Export) -->
-<div *ngIf="rowSubOpen" class="row-submenu" [ngStyle]="{ left: rowSubX + 'px', top: rowSubY + 'px' }"
-  (mouseenter)="cancelCloseSubmenu()" (mouseleave)="scheduleCloseSubmenu()" (click)="$event.stopPropagation()">
 
-  <ng-container [ngSwitch]="rowSubKind">
-    <ng-container *ngSwitchCase="'view'">
-      <button class="mini-item" (click)="viewBody()">Body</button>
-      <button class="mini-item" (click)="viewBodyHex()">Body in hexa</button>
-      <button class="mini-item" (click)="viewDecodedHeader()">Decoded header</button>
-    </ng-container>
-
-    <ng-container *ngSwitchCase="'export'">
-      <button class="mini-item" (click)="exportBody()">Body</button>
-      <button class="mini-item" (click)="exportBodyHex()">Body in hexa</button>
-      <button class="mini-item" (click)="exportDecodedHeader()">Decoded header</button>
-    </ng-container>
-  </ng-container>
-</div>
 
 <!-- Backdrop commun pour fermer -->
 <div *ngIf="rowMenuOpen || rowSubOpen" class="mini-backdrop" (click)="closeRowMenus()"></div>

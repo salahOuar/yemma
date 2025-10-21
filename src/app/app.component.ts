@@ -14,17 +14,15 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { AgGridAngular } from 'ag-grid-angular';
-import { ColDef, GetContextMenuItemsParams, MenuItemDef } from 'ag-grid-community';
+import { ColDef, GetContextMenuItemsParams, IDatasource, IGetRowsParams, MenuItemDef } from 'ag-grid-community';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-
-import { generateRows, MsgRow } from './mock-data';
-
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
 import { EditMessageDialogComponent } from './dialogs/edit-message.component';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { InterbankInMessage, InterbankMessage, InterbankMessageControllerService, SearchMsgParam } from './api';
 
 type MsgHistoryItem = { when: string; who: string; action: string; };
 
@@ -49,7 +47,7 @@ type MsgHistoryItem = { when: string; who: string; action: string; };
 export class AppComponent implements OnInit, OnDestroy {
   title = 'Messages console';
   collapsed = false;
-
+  messages: InterbankMessage[] = [];
 
   @ViewChild(AgGridAngular) grid?: AgGridAngular;
   @ViewChild('sidenav') sidenav?: ElementRef<HTMLElement>;
@@ -57,16 +55,38 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private dialog: MatDialog,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private interbankMessageControllerService: InterbankMessageControllerService
   ) { }
 
 
+
+  getSearchParams(): SearchMsgParam {
+    const raw = this.form.getRawValue();
+
+    const clean = (value: string | null): string | undefined =>
+      value === null || value === '' ? undefined : value;
+
+    return {
+      type: clean(raw.type),
+      direction: raw.direction as SearchMsgParam.DirectionEnum,
+      network: raw.network ? raw.network : [],
+      sender: clean(raw.sender),
+      receiver: clean(raw.receiver),
+      internalRef: clean(raw.intRef),
+      externalRef: clean(raw.extRef),
+      fileRef: clean(raw.fileRef),
+      startDate: raw.startDate ? raw.startDate.getTime() + "" : undefined,
+      stopDate: raw.stopDate ? raw.stopDate.getTime() + "" : undefined
+    };
+  }
+
   form = this.fb.group({
-    direction: ['Incoming'],
-    network: ['SWIFT'],
-    type: ['535'],
-    start: [new Date(new Date().setMonth(new Date().getMonth() - 1))],
-    stop: [new Date()],
+    direction: SearchMsgParam.DirectionEnum.Incoming,
+    network: [],
+    type: [''],
+    startDate: [new Date(new Date().setMonth(new Date().getMonth() - 1))],
+    stopDate: [new Date()],
     replayed: [false],
     countOnly: [false],
     subType: [''],
@@ -75,27 +95,42 @@ export class AppComponent implements OnInit, OnDestroy {
     receiver: [''],
     extRef: [''],
     intRef: [''],
+    intKey: [''],
+    receptionDate: [new Date()],
     owner: [''],
+    fileRef: [''],
+    blockName: [''],
+    applicationName: [''],
+    environnement: ['']
+
   });
 
   rightOpen = false;
-  selectedRow?: MsgRow;
+  selectedRow?: InterbankMessage;
 
   menuOpen = false;
   menuX = 0;
   menuY = 0;
-  menuRow?: MsgRow;
+  menuRow?: InterbankMessage;
+
+
+  pageSize = 100;
+  currentPage = 0;
+
 
   history: Array<{ when: string; who: string; action: string }> = [];
 
   private currentMenuIcon?: HTMLElement | null;
+
+  leftOpen = false;
 
   onRowClicked(ev: any) {
     const t = ev.event?.target as HTMLElement | null;
     if (t && t.closest('.action-icon')) return; // ⛔ ne pas ouvrir le drawer si on clique une icône
     this.selectedRow = ev.data;
     this.history = this.buildHistoryMock(this.selectedRow);
-    this.rightOpen = true;
+    //this.rightOpen = true;
+    this.leftOpen = true;
   }
 
   closeDetail() {
@@ -104,22 +139,28 @@ export class AppComponent implements OnInit, OnDestroy {
     // this.grid?.api.deselectAll();
   }
 
-  private buildHistoryMock(row?: MsgRow): MsgHistoryItem[] {
+  private buildHistoryMock(row?: InterbankMessage): MsgHistoryItem[] {
     if (!row) return [];
-    const base = row.extRef || row.intRef || 'MSG';
+    const base = row.externalReference || row.internalReference || 'MSG';
     return [
       { when: '2025-10-16 09:12', who: 'system', action: `Imported ${base}` },
-      { when: '2025-10-16 09:14', who: 'NDP', action: `Routed to ${row.receiver}` },
+      { when: '2025-10-16 09:14', who: 'NDP', action: `Routed to ${row.receiverId}` },
       { when: '2025-10-16 09:18', who: 'ops', action: 'Validated headers' },
       { when: '2025-10-16 09:20', who: 'ops', action: 'Delivered to back-office' },
     ];
   }
-
-  columnDefs: ColDef<MsgRow>[] = [
-    {
+  onPaginationChanged(): void {
+    if (this.grid) {
+      const currentPage = this.grid.api.paginationGetCurrentPage();
+      this.currentPage = currentPage;
+      this.search(); // recharge les données avec la nouvelle page
+    }
+  }
+  columnDefs: ColDef<InterbankMessage>[] = [
+    /*{
       headerName: 'Status', field: 'status', maxWidth: 110, pinned: 'left', sortable: true,
       cellRenderer: (p: { data: { status: string | undefined; }; }) => this.statusCell(p.data?.status as MsgRow['status'])
-    },
+    },*/
     {
       headerName: 'Direction',
       field: 'direction',
@@ -173,14 +214,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
     { headerName: 'Network', field: 'network', width: 110 },
-    { headerName: 'Type', field: 'type', width: 90 },
-    { headerName: 'Ext. reference', field: 'extRef', flex: 1, minWidth: 180 },
-    { headerName: 'Int. reference', field: 'intRef', flex: 1, minWidth: 180 },
-    { headerName: 'Receiver', field: 'receiver', width: 180 },
-    { headerName: 'Sender', field: 'sender', width: 180 },
-    { headerName: 'Start date', field: 'start', width: 170 },
-    { headerName: 'Stop date', field: 'stop', width: 170 },
-    { headerName: 'Owner', field: 'owner', width: 140 },
+    { headerName: 'Type', field: 'category.category', width: 90 },
+    { headerName: 'Ext. reference', field: 'externalReference', flex: 1, minWidth: 180 },
+    { headerName: 'Int. reference', field: 'internalReference', flex: 1, minWidth: 180 },
+    { headerName: 'Receiver', field: 'receiverId', width: 180 },
+    { headerName: 'Sender', field: 'senderId', width: 180 },
+    { headerName: 'Start date', field: 'creationDate', width: 170 },
+    { headerName: 'Stop date', field: 'receptionDate', width: 170 },
+    { headerName: 'Owner', field: 'cdOwner', width: 140 },
   ];
 
   defaultColDef: ColDef = {
@@ -188,19 +229,19 @@ export class AppComponent implements OnInit, OnDestroy {
     resizable: true,
     filter: true,
   };
-  openMenu(row: MsgRow, event: MouseEvent) {
+  openMenu(row: InterbankMessage, event: MouseEvent) {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     this.menuX = rect.right + 6;
     this.menuY = rect.top;
     this.menuRow = row;
     this.menuOpen = true;
   }
-  rowData: MsgRow[] = generateRows(250);
+  rowData: InterbankInMessage[] = [];
   total = this.rowData.length;
   loading = false;
 
 
-  statusCell(s?: MsgRow['status']) {
+  /*statusCell(s?: MsgRow['status']) {
     const map: Record<NonNullable<MsgRow['status']>, string> = {
       ok: '#2e7d32', waiting: '#f9a825', warn: '#ef6c00', err: '#c62828'
     };
@@ -211,39 +252,152 @@ export class AppComponent implements OnInit, OnDestroy {
         <span style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block"></span>
         <span>${label}</span>
       </div>`;
+  }*/
+
+
+
+  /* search(): void {
+     if (this.form.valid) {
+       this.loading = true;
+       const params = this.getSearchParams(); // méthode qui convertit ton formulaire en SearchMsgParam
+ 
+       this.interbankMessageControllerService.searchMessages(params).subscribe({
+         next: (data) => {
+           if (this.grid) {
+             this.grid.api.setGridOption('rowData', data.interbankMessageList as InterbankMessage[]);
+           } else {
+             this.rowData = data.interbankMessageList as InterbankMessage[];
+           }
+ 
+           this.total = (data?.nbrMessages) && (data?.nbrMessages > 1000) ? 1000 : data.interbankMessageList?.length ? data.interbankMessageList?.length : 0;
+           this.loading = false;
+         },
+         error: (err) => {
+           console.error('Erreur lors de la recherche', err);
+           this.loading = false;
+         }
+       });
+ 
+       this.loading = true;
+     } else {
+       this.form.markAllAsTouched();
+     }
+   }*/
+  /* search(): void {
+     if (this.form.valid) {
+       this.loading = true;
+       const params = this.getSearchParams();
+ 
+ 
+       const page = this.grid?.api.paginationGetCurrentPage() ?? 0;
+       const size = this.grid?.api.paginationGetPageSize() ?? this.pageSize;
+ 
+ 
+       this.interbankMessageControllerService.searchMessages(params, page, size).subscribe({
+         next: (data) => {
+           const messages = data.interbankMessageList as InterbankMessage[];
+           this.rowData = messages;
+           this.total = data?.nbrMessages ?? messages.length ?? 0;
+ 
+           if (this.grid) {
+             this.grid.api.setGridOption('rowData', data.interbankMessageList as InterbankMessage[]);
+           }
+ 
+           this.loading = false;
+         },
+         error: (err) => {
+           console.error('Erreur lors de la recherche', err);
+           this.loading = false;
+         }
+       });
+     } else {
+       this.form.markAllAsTouched();
+     }
+   }*/
+
+  /*search(): void {
+    if (this.form.valid) {
+      this.loading = true;
+      const params = this.getSearchParams();
+
+      const currentPage = this.grid?.api.paginationGetCurrentPage() ?? 0;
+      const size = this.pageSize;
+
+      this.interbankMessageControllerService.searchMessages(params, currentPage, size).subscribe({
+        next: (data) => {
+          this.rowData = data.interbankMessageList ?? [];
+          this.total = (data?.nbrMessages) && (data?.nbrMessages > 1000) ? 1000 : data.interbankMessageList?.length ? data.interbankMessageList?.length : 0;
+          this.grid?.api.setGridOption('rowData', data.interbankMessageList as InterbankMessage[]);
+          this.loading = false;
+
+          const dataSource: IDatasource = {
+            rowCount: undefined, // behave as infinite scroll
+            getRows: (params: IGetRowsParams) => {
+        
+            },
+          };
+
+          this.grid!.api.setGridOption("datasource", dataSource);
+        },
+        error: (err) => {
+          console.error('Erreur lors de la recherche', err);
+          this.loading = false;
+        }
+      });
+    } else {
+      this.form.markAllAsTouched();
+    }
+  };*/
+
+
+
+  search(): void {
+    if (this.form.valid) {
+      const searchParams = this.getSearchParams();
+
+      const datasource: IDatasource = {
+        getRows: (params: IGetRowsParams) => {
+          const page = Math.floor(params.startRow / this.pageSize);
+
+          this.grid!.api.setGridOption("loading", true);
+          this.interbankMessageControllerService.searchMessages(searchParams, page, this.pageSize).subscribe({
+            next: (data) => {
+              console.info("33333")
+              const rows = data.interbankMessageList ?? [];
+              this.total = (data?.nbrMessages) && (data?.nbrMessages > 1000) ? 1000 : data.interbankMessageList?.length ? data.interbankMessageList?.length : 0;
+
+
+              params.successCallback(rows, this.total);
+              this.grid!.api.setGridOption("loading", false);
+            },
+            error: () => {
+              params.failCallback();
+            }
+          });
+        }
+      };
+
+      // ✅ Recharge le datasource
+      this.grid!.api.setGridOption("datasource", datasource);
+    } else {
+      this.form.markAllAsTouched();
+    }
   }
 
-  search() {
-    this.loading = true;
-
-    setTimeout(() => {
-      // Pour la démo : on simule un filtrage ou un rechargement local
-      const data = [...this.rowData]; // copie du mock existant (ici inchangée)
-
-      if (this.grid) {
-        this.grid.api.setGridOption('rowData', data as any);
-      } else {
-        this.rowData = data;
-      }
-
-      this.total = data.length;
-      this.loading = false;
-    }, 400);
-  }
   onGridReady(params: any) {
     console.log('AG Grid ready. rowData length =', this.rowData?.length);
     params.api.sizeColumnsToFit();
   }
-  getContextMenuItems = (params: GetContextMenuItemsParams<MsgRow>) => {
+  getContextMenuItems = (params: GetContextMenuItemsParams<InterbankMessage>) => {
     const custom: (MenuItemDef | string)[] = [
       {
         name: 'Edit message',
-        action: () => alert(`Edit ${params.node?.data?.extRef}`),
+        action: () => alert(`Edit ${params.node?.data?.externalReference}`),
         icon: '<span class="material-icons" style="font-size:16px">edit</span>'
       },
       {
         name: 'Replay',
-        action: () => alert(`Replay ${params.node?.data?.extRef}`),
+        action: () => alert(`Replay ${params.node?.data?.externalReference}`),
         icon: '<span class="material-icons" style="font-size:16px">replay</span>'
       },
       'separator',
@@ -300,7 +454,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  openEditDialog(row: MsgRow) {
+  openEditDialog(row: InterbankMessage) {
     const ref = this.dialog.open(EditMessageDialogComponent, {
       width: '760px',
       maxWidth: '92vw',
@@ -314,10 +468,10 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
 
-    ref.afterClosed().subscribe((result?: MsgRow) => {
+    ref.afterClosed().subscribe((result?: InterbankMessage) => {
       if (!result) return; // Cancel
       // Update in memory (simple remplacement par extRef; adapte si id unique diffère)
-      const idx = this.rowData.findIndex(r => r.extRef === row.extRef);
+      const idx = this.rowData.findIndex(r => r.externalReference === row.externalReference);
       if (idx >= 0) {
         this.rowData[idx] = { ...this.rowData[idx], ...result };
         if (this.grid) {
@@ -337,12 +491,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   };
 
-  exportExcelRow(row: MsgRow) {
+  exportExcelRow(row: InterbankMessage) {
     // Si Enterprise importé, on peut exporter Excel. Sinon: bascule vers CSV.
     try {
       // sélectionne la ligne puis exporte
       const node = this.grid?.api.getDisplayedRowAtIndex(
-        this.rowData.findIndex(r => r.extRef === row.extRef)
+        this.rowData.findIndex(r => r.externalReference === row.externalReference)
       );
       node?.setSelected(true);
       (this.grid as any)?.api.exportDataAsExcel?.({ onlySelected: true }) // Enterprise
@@ -354,8 +508,8 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  deleteRow(row: MsgRow) {
-    this.rowData = this.rowData.filter(r => r.extRef !== row.extRef);
+  deleteRow(row: InterbankMessage) {
+    this.rowData = this.rowData.filter(r => r.externalReference !== row.externalReference);
     if (this.grid) {
       this.grid.api.setGridOption('rowData', [...this.rowData] as any);
     }
@@ -363,8 +517,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.closeMiniMenu();
   }
 
-  duplicateRow(row: MsgRow) {
-    const copy: MsgRow = { ...row, extRef: row.extRef + '-COPY', intRef: row.intRef + '-COPY' };
+  duplicateRow(row: InterbankMessage) {
+    const copy: InterbankMessage = { ...row, externalReference: row.externalReference + '-COPY', internalReference: row.internalReference + '-COPY' };
     this.rowData = [copy, ...this.rowData];
     if (this.grid) {
       this.grid.api.setGridOption('rowData', [...this.rowData] as any);
@@ -387,7 +541,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private updateMenuPositionBound = this.updateMenuPosition.bind(this);
 
-
+  noRowsTemplate = `
+  <div class="empty-state">   
+    <div class="main-title">Nothing here yet</div>
+    <div class="description">Start typing in the field to find what you're looking for.</div>
+  </div>
+`;
   onCellClicked(ev: any) {
     if (ev.colDef?.colId !== 'direction') return;
 
@@ -413,6 +572,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const gridViewport = document.querySelector('.ag-body-viewport');
     gridViewport?.addEventListener('scroll', this.closeMiniMenu, true);
     window.addEventListener('resize', this.closeMiniMenu, true);
+
   }
 
   ngOnDestroy() {
@@ -424,7 +584,7 @@ export class AppComponent implements OnInit, OnDestroy {
   rowMenuOpen = false;
   rowMenuX = 0;
   rowMenuY = 0;
-  rowMenuRow?: MsgRow;
+  rowMenuRow?: InterbankMessage;
 
   rowSubOpen = false;
   rowSubX = 0;
@@ -439,7 +599,7 @@ export class AppComponent implements OnInit, OnDestroy {
   };
 
   /** Appelé au clic sur l'icône ⋮ de la colonne Direction */
-  private openRowMenuAtIcon(iconEl: HTMLElement, row: MsgRow) {
+  private openRowMenuAtIcon(iconEl: HTMLElement, row: InterbankMessage) {
     const r = iconEl.getBoundingClientRect();
     this.rowMenuX = Math.max(8, r.right + 8);
     // place le menu, clamp pour rester visible
@@ -468,7 +628,7 @@ export class AppComponent implements OnInit, OnDestroy {
   replayRow() {
     const row = this.rowMenuRow ?? this.selectedRow;
     if (!row) { alert('Select a row first.'); return; }
-    alert(`Replay ${row.extRef}`); // branche ton action
+    alert(`Replay ${row.externalReference}`); // branche ton action
     this.closeRowMenus();
   }
 
@@ -531,6 +691,58 @@ export class AppComponent implements OnInit, OnDestroy {
   onResetClick() {
     this.form.reset();
   }
+
+
+
+
+
+  closeModal(): void {
+    this.selectedRow = undefined;
+  }
+
+  selectPreviousRow(): void {
+    const index = this.getDisplayedRowIndexFromData(this.selectedRow);
+    if (index && index > 0) {
+      const previousNode = this.grid?.api?.getDisplayedRowAtIndex(index - 1);
+      this.selectedRow = previousNode?.data;
+    }
+  }
+
+  selectNextRow(): void {
+    const index = this.getDisplayedRowIndexFromData(this.selectedRow);
+    if (index !== null) {
+      const previousNode = this.grid?.api.getDisplayedRowAtIndex(index - 1);
+      this.selectedRow = previousNode?.data;
+    }
+
+    const nextNode = this.grid?.api?.getDisplayedRowAtIndex(index ? index + 1 : 1);
+    if (nextNode) {
+      this.selectedRow = nextNode.data;
+    }
+  }
+
+  getDisplayedRowIndexFromData(data: any): number | null {
+    const rowCount = this.grid?.api?.getDisplayedRowCount();
+    if (rowCount) {
+      for (let i = 0; i < rowCount; i++) {
+        const rowNode = this.grid?.api?.getDisplayedRowAtIndex(i);
+        if (rowNode?.data === data) {
+          return i;
+        }
+      }
+    }
+
+    return null;
+  }
+
+
+
+
+  closeLeftModal(): void {
+    this.leftOpen = false;
+  }
+
+
 
 
 }

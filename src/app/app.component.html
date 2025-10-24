@@ -173,6 +173,14 @@
                   (gridReady)="onGridReady($event)" (cellClicked)="onCellClicked($event)"
                   (rowClicked)="onRowClicked($event)" rowSelection="single" [animateRows]="true">
                 </ag-grid-angular>
+
+                <!-- ✅ Ton panneau latéral -->
+
+
+                <app-side-detail [open]="detailOpen" [row]="selectedRow" [history]="history" (closed)="onDetailClosed()"
+                  (navigate)="onNavigate($event)">
+                </app-side-detail>
+
               </div>
             </mat-card-content>
           </mat-card>
@@ -180,7 +188,7 @@
       </mat-drawer-content>
 
       <!-- TIROIR DETAIL (droite) -->
-      <mat-drawer position="end" mode="side" [opened]="rightOpen" class="detail-drawer">
+      <mat-drawer position="end" mode="side" [opened]="false" class="detail-drawer">
         <div class="detail-header">
           <div class="title">
             <mat-icon>description</mat-icon>
@@ -230,6 +238,7 @@
           </mat-tab>
         </mat-tab-group>
       </mat-drawer>
+
     </mat-drawer-container>
   </mat-sidenav-content>
 </mat-sidenav-container>

@@ -1,0 +1,43 @@
+<!-- Host : gère l’état (prep / is-open) -->
+<div class="side-host" [class.prep]="prep" [class.is-open]="isOpen">
+
+  <!-- ✅ VEIL-BAR : remplace l'ancien overlay
+       - occupe toute la partie gauche
+       - bloque les clics derrière
+       - seuls les boutons sont cliquables et visibles en blanc
+  -->
+  <div class="veil-bar">
+    <div class="btn-column">
+      <button class="close-btn" (click)="close()">✕</button>
+      <div class="nav-btns">
+        <button (click)="previous()"><</button>
+        <button (click)="next()">></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panneau à droite -->
+  <div class="side-panel">
+    <div class="detail-content">
+      <mat-tab-group>
+        <mat-tab label="Détail">
+          <div *ngIf="row; else noRow">
+            <div><b>ExtRef:</b> {{ row.extRef }}</div>
+            <div><b>IntRef:</b> {{ row.intRef }}</div>
+            <div><b>Sender:</b> {{ row.sender }}</div>
+            <div><b>Receiver:</b> {{ row.receiver }}</div>
+          </div>
+          <ng-template #noRow><i>Aucune ligne sélectionnée.</i></ng-template>
+        </mat-tab>
+        <mat-tab label="Historique">
+          <div *ngIf="history?.length; else noHist">
+            <div *ngFor="let h of history">
+              {{ h.when }} — {{ h.who }} — {{ h.action }}
+            </div>
+          </div>
+          <ng-template #noHist><i>Aucun historique.</i></ng-template>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  </div>
+</div>

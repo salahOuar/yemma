@@ -1,0 +1,116 @@
+/* =========================
+   HOST + synchronisation anim
+========================= */
+.side-host {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none; /* fermé par défaut */
+
+  .veil-bar {
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 75%; /* occupe toute la partie gauche */
+    background: rgba(0,0,0,0.12);            /* voile léger, pas de blur */
+    opacity: 0;                               /* cachée avant ouverture */
+    transition: opacity .28s ease;
+    z-index: 1;
+
+    /* ✅ bloque les clics derrière */
+    pointer-events: auto;
+
+    /* place la colonne de boutons collée au panneau (à droite de la zone) */
+    display: flex;
+    justify-content: flex-end;
+
+    .btn-column {
+      width: 60px;
+      /* On veut que seule la zone "bouton" capte le clic */
+      pointer-events: none; /* on désactive tout... */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 0;
+    }
+  }
+
+  .side-panel {
+    position: absolute;
+    top: 0; right: 0;
+    height: 100vh; width: 75%;
+    display: flex;
+    background: transparent;   /* fond déplacé dans .detail-content */
+    box-shadow: none;
+    transform: translateX(100%);  /* hors écran */
+    transition: transform .28s ease;
+    will-change: transform;
+    z-index: 2;
+  }
+}
+
+/* Phase préparation : tout monté mais invisible / off-canvas */
+.side-host.prep {
+  pointer-events: none;
+  .veil-bar   { opacity: 0; }
+  .side-panel { transform: translateX(100%); }
+}
+
+/* Phase ouverte : fade-in de la veil-bar + slide-in du panneau en même temps */
+.side-host.is-open {
+  pointer-events: auto;
+  .veil-bar   { opacity: 1; }
+  .side-panel { transform: translateX(0); }
+}
+
+/* =========================
+   Boutons visibles en blanc
+   (seuls eux sont cliquables)
+========================= */
+.btn-column button {
+  /* réactive les clics uniquement sur les boutons */
+  pointer-events: auto;
+
+  background: rgba(255,255,255,0.95);
+  border: none;
+  border-radius: 8px;
+  width: 36px; height: 36px;
+  color: #333;
+  font-size: 1.2rem;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: transform .2s ease, background-color .2s ease;
+}
+.btn-column button:hover { background:#fff; transform: scale(1.05); }
+
+/* Croix en haut, flèches centrées verticalement */
+.close-btn { /* rien de plus, mais tu peux ajouter margin si besoin */ }
+
+.nav-btns {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:1rem; flex:1;
+}
+
+/* =========================
+   Contenu du panneau (fond blanc + ombre)
+========================= */
+.detail-content {
+  flex: 1;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -4px 0 16px rgba(0,0,0,.10);
+  padding: 1.5rem;
+  overflow-y: auto;
+  z-index: 2;
+}
+
+/* Anti-blur global (Material/CDK) - sécurité */
+.cdk-overlay-backdrop,
+.mat-mdc-dialog-surface,
+.mat-mdc-dialog-container,
+html, body, app-root, .app-root {
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

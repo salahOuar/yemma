@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
-
 import { MatListModule } from '@angular/material/list';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,6 +25,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { EditMessageDialogComponent } from './dialogs/edit-message.component';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
+// ⚠️ garde ton chemin existant (ou adapte selon ton arborescence)
+import { SideDetailComponent } from "./components/side-detail/side-detail";
+
 type MsgHistoryItem = { when: string; who: string; action: string; };
 
 @Component({
@@ -42,6 +44,7 @@ type MsgHistoryItem = { when: string; who: string; action: string; };
     MatDividerModule,
     // ag-grid
     AgGridAngular,
+    SideDetailComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
@@ -50,16 +53,16 @@ export class AppComponent implements OnInit, OnDestroy {
   title = 'Messages console';
   collapsed = false;
 
-
   @ViewChild(AgGridAngular) grid?: AgGridAngular;
   @ViewChild('sidenav') sidenav?: ElementRef<HTMLElement>;
+  // ➜ référence au panneau latéral (pense à mettre #sideDetail dans le template)
+  @ViewChild('sideDetail') sideDetail!: SideDetailComponent;
 
   constructor(
     private fb: FormBuilder,
     private dialog: MatDialog,
     private cdr: ChangeDetectorRef
   ) { }
-
 
   form = this.fb.group({
     direction: ['Incoming'],
@@ -78,7 +81,8 @@ export class AppComponent implements OnInit, OnDestroy {
     owner: [''],
   });
 
-  rightOpen = false;
+  // ⛔ supprimé: rightOpen (on ne l’utilise plus)
+
   selectedRow?: MsgRow;
 
   menuOpen = false;
@@ -86,21 +90,16 @@ export class AppComponent implements OnInit, OnDestroy {
   menuY = 0;
   menuRow?: MsgRow;
 
-  history: Array<{ when: string; who: string; action: string }> = [];
+  history: Array<MsgHistoryItem> = [];
 
   private currentMenuIcon?: HTMLElement | null;
 
-  onRowClicked(ev: any) {
-    const t = ev.event?.target as HTMLElement | null;
-    if (t && t.closest('.action-icon')) return; // ⛔ ne pas ouvrir le drawer si on clique une icône
-    this.selectedRow = ev.data;
-    this.history = this.buildHistoryMock(this.selectedRow);
-    this.rightOpen = true;
-  }
 
+  // ➜ conservé si tu veux aussi fermer depuis le parent (par ex. via un bouton)
   closeDetail() {
-    this.rightOpen = false;
-    // si tu veux aussi désélectionner la ligne :
+    // simplement déléguer au composant, ou laisser le composant gérer son état
+    this.sideDetail?.close();
+    // Option: désélectionner la ligne
     // this.grid?.api.deselectAll();
   }
 
@@ -127,23 +126,19 @@ export class AppComponent implements OnInit, OnDestroy {
       colId: 'direction',
       cellRenderer: (p: { value: string }) => {
         const dir = p.value ?? '';
-
-        // conteneur principal
         const host = document.createElement('div');
         host.className = 'dir-cell';
 
-        // texte
         const label = document.createElement('span');
         label.className = 'dir-label';
         label.textContent = dir;
 
-        // icônes d’action (masquées par défaut)
         const actions = document.createElement('span');
         actions.className = 'row-actions';
         actions.innerHTML = `
-      <span class="material-icons action-icon" data-action="menu" title="Plus">more_vert</span>
-      <span class="material-icons action-icon" data-action="edit" title="Éditer">edit</span>
-    `;
+          <span class="material-icons action-icon" data-action="menu" title="Plus">more_vert</span>
+          <span class="material-icons action-icon" data-action="edit" title="Éditer">edit</span>
+        `;
         Object.assign(actions.style, {
           opacity: '0',
           pointerEvents: 'none',
@@ -151,7 +146,6 @@ export class AppComponent implements OnInit, OnDestroy {
           transition: 'opacity 0.25s ease, transform 0.25s ease'
         });
 
-        // gestion du survol
         host.addEventListener('mouseenter', () => {
           actions.style.opacity = '1';
           actions.style.pointerEvents = 'auto';
@@ -168,10 +162,6 @@ export class AppComponent implements OnInit, OnDestroy {
         return host;
       },
     },
-
-
-
-
     { headerName: 'Network', field: 'network', width: 110 },
     { headerName: 'Type', field: 'type', width: 90 },
     { headerName: 'Ext. reference', field: 'extRef', flex: 1, minWidth: 180 },
@@ -188,6 +178,7 @@ export class AppComponent implements OnInit, OnDestroy {
     resizable: true,
     filter: true,
   };
+
   openMenu(row: MsgRow, event: MouseEvent) {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     this.menuX = rect.right + 6;
@@ -195,10 +186,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.menuRow = row;
     this.menuOpen = true;
   }
+
   rowData: MsgRow[] = generateRows(250);
   total = this.rowData.length;
   loading = false;
-
 
   statusCell(s?: MsgRow['status']) {
     const map: Record<NonNullable<MsgRow['status']>, string> = {
@@ -215,25 +206,23 @@ export class AppComponent implements OnInit, OnDestroy {
 
   search() {
     this.loading = true;
-
     setTimeout(() => {
-      // Pour la démo : on simule un filtrage ou un rechargement local
-      const data = [...this.rowData]; // copie du mock existant (ici inchangée)
-
+      const data = [...this.rowData];
       if (this.grid) {
         this.grid.api.setGridOption('rowData', data as any);
       } else {
         this.rowData = data;
       }
-
       this.total = data.length;
       this.loading = false;
     }, 400);
   }
+
   onGridReady(params: any) {
     console.log('AG Grid ready. rowData length =', this.rowData?.length);
     params.api.sizeColumnsToFit();
   }
+
   getContextMenuItems = (params: GetContextMenuItemsParams<MsgRow>) => {
     const custom: (MenuItemDef | string)[] = [
       {
@@ -273,14 +262,10 @@ export class AppComponent implements OnInit, OnDestroy {
   openResultsMenu(ev: MouseEvent) {
     ev.stopPropagation();
     const r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
-    this.resultsMenuX = r.right - 180;                 // aligne le menu sous l’icône
-    this.resultsMenuY = Math.min(
-      r.bottom + 6,
-      window.innerHeight - 120
-    );
+    this.resultsMenuX = r.right - 180;
+    this.resultsMenuY = Math.min(r.bottom + 6, window.innerHeight - 120);
     this.resultsMenuOpen = true;
     this.cdr.detectChanges();
-    // fermer au scroll de la grille
     document.querySelector('.ag-body-viewport')
       ?.addEventListener('scroll', this.closeResultsMenu, { once: true });
   }
@@ -291,7 +276,6 @@ export class AppComponent implements OnInit, OnDestroy {
   };
 
   exportExcelAll() {
-    // Excel (Enterprise) sinon CSV (Community)
     try {
       (this.grid as any)?.api.exportDataAsExcel?.({}) ??
         (this.grid as any)?.api.exportDataAsCsv?.({});
@@ -304,7 +288,6 @@ export class AppComponent implements OnInit, OnDestroy {
     const ref = this.dialog.open(EditMessageDialogComponent, {
       width: '760px',
       maxWidth: '92vw',
-      // 👉 pas de hauteur max, pas de scroll interne
       height: 'auto',
       maxHeight: 'none',
       autoFocus: false,
@@ -313,10 +296,8 @@ export class AppComponent implements OnInit, OnDestroy {
       data: { ...row },
     });
 
-
     ref.afterClosed().subscribe((result?: MsgRow) => {
       if (!result) return; // Cancel
-      // Update in memory (simple remplacement par extRef; adapte si id unique diffère)
       const idx = this.rowData.findIndex(r => r.extRef === row.extRef);
       if (idx >= 0) {
         this.rowData[idx] = { ...this.rowData[idx], ...result };
@@ -338,15 +319,13 @@ export class AppComponent implements OnInit, OnDestroy {
   };
 
   exportExcelRow(row: MsgRow) {
-    // Si Enterprise importé, on peut exporter Excel. Sinon: bascule vers CSV.
     try {
-      // sélectionne la ligne puis exporte
       const node = this.grid?.api.getDisplayedRowAtIndex(
         this.rowData.findIndex(r => r.extRef === row.extRef)
       );
       node?.setSelected(true);
-      (this.grid as any)?.api.exportDataAsExcel?.({ onlySelected: true }) // Enterprise
-        ?? (this.grid as any)?.api.exportDataAsCsv?.({ onlySelected: true }); // Community fallback
+      (this.grid as any)?.api.exportDataAsExcel?.({ onlySelected: true })
+        ?? (this.grid as any)?.api.exportDataAsCsv?.({ onlySelected: true });
     } catch {
       (this.grid as any)?.api.exportDataAsCsv?.();
     } finally {
@@ -375,18 +354,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
   updateMenuPosition = () => {
     if (!this.currentMenuIcon) return;
-
     const r = this.currentMenuIcon.getBoundingClientRect();
     const gridViewport = document.querySelector('.ag-body-viewport') as HTMLElement;
     const scrollY = (gridViewport?.scrollTop ?? 0) + window.scrollY;
-
     this.menuX = r.right + 6;
     this.menuY = r.top + scrollY;
     this.cdr.detectChanges();
   };
-
   private updateMenuPositionBound = this.updateMenuPosition.bind(this);
-
 
   onCellClicked(ev: any) {
     if (ev.colDef?.colId !== 'direction') return;
@@ -396,7 +371,6 @@ export class AppComponent implements OnInit, OnDestroy {
     const icon = target.closest('[data-action]') as HTMLElement | null;
     if (!icon) return;
 
-    // STOP la propagation pour ne pas ouvrir le drawer gauche
     ev.event.stopPropagation();
     ev.event.preventDefault();
 
@@ -406,7 +380,6 @@ export class AppComponent implements OnInit, OnDestroy {
     } else if (action === 'menu') {
       this.openRowMenuAtIcon(icon, ev.data);
     }
-
   }
 
   ngOnInit() {
@@ -420,6 +393,7 @@ export class AppComponent implements OnInit, OnDestroy {
     gridViewport?.removeEventListener('scroll', this.closeMiniMenu, true);
     window.removeEventListener('resize', this.closeMiniMenu, true);
   }
+
   /** ------- état du menu de ligne ------- */
   rowMenuOpen = false;
   rowMenuX = 0;
@@ -442,7 +416,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private openRowMenuAtIcon(iconEl: HTMLElement, row: MsgRow) {
     const r = iconEl.getBoundingClientRect();
     this.rowMenuX = Math.max(8, r.right + 8);
-    // place le menu, clamp pour rester visible
     const menuHeight = 180;
     this.rowMenuY = Math.min(r.top, window.innerHeight - menuHeight - 10);
     this.rowMenuRow = row;
@@ -450,13 +423,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.rowSubOpen = false;
     this.cdr.detectChanges();
 
-    // ferme si on scroll dans la grille
     document.querySelector('.ag-body-viewport')
       ?.addEventListener('scroll', this.closeRowMenus, { once: true });
   }
-
-
-
 
   /** Branches actions du menu principal */
   editSelectedRow() {
@@ -468,7 +437,7 @@ export class AppComponent implements OnInit, OnDestroy {
   replayRow() {
     const row = this.rowMenuRow ?? this.selectedRow;
     if (!row) { alert('Select a row first.'); return; }
-    alert(`Replay ${row.extRef}`); // branche ton action
+    alert(`Replay ${row.extRef}`);
     this.closeRowMenus();
   }
 
@@ -482,55 +451,79 @@ export class AppComponent implements OnInit, OnDestroy {
   exportBodyHex() { alert('Export → Body in hexa'); this.closeRowMenus(); }
   exportDecodedHeader() { alert('Export → Decoded header'); this.closeRowMenus(); }
 
-
-
-  // --- pour gestion du timer de fermeture du sous-menu
+  // --- sous-menu (timers) ---
   private rowSubCloseTimeout?: any;
-
-  // Montre le sous-menu au survol du parent
   openRowSubmenu(ev: MouseEvent, kind: 'view' | 'export') {
     ev.stopPropagation();
     clearTimeout(this.rowSubCloseTimeout);
-
     const el = ev.currentTarget as HTMLElement;
     const r = el.getBoundingClientRect();
-
     this.rowSubKind = kind;
     this.rowSubX = r.right + 8;
     const subHeight = 160;
     this.rowSubY = Math.min(r.top - 6, window.innerHeight - subHeight - 10);
-
     this.rowSubOpen = true;
     this.cdr.detectChanges();
   }
-
-  // Ferme le sous-menu (avec un léger délai pour laisser le temps au survol)
   scheduleCloseSubmenu() {
     clearTimeout(this.rowSubCloseTimeout);
     this.rowSubCloseTimeout = setTimeout(() => {
       this.rowSubOpen = false;
       this.rowSubKind = null;
       this.cdr.markForCheck();
-    }, 200); // délai 200 ms = fluide
+    }, 200);
   }
-
-  // Annule la fermeture (quand on revient sur le sous-menu)
   cancelCloseSubmenu() {
     clearTimeout(this.rowSubCloseTimeout);
   }
+
   showAdvanced = false;
+  toggleAdvancedSearch() { this.showAdvanced = !this.showAdvanced; }
+  onSearchClick() { this.search(); }
+  onResetClick() { this.form.reset(); }
 
-  toggleAdvancedSearch() {
-    this.showAdvanced = !this.showAdvanced;
+  // ✅ plus besoin de cette version — on pilote via sideDetail
+  // openDetail(event: any) {
+  //   this.selectedRow = event.data;
+  // }
+
+
+
+
+
+
+
+
+
+
+  detailOpen = false;
+
+
+
+  onRowClicked(ev: any) {
+    const t = ev.event?.target as HTMLElement | null;
+    if (t && t.closest('.action-icon')) return; // ignore clics sur icônes d’action
+
+    this.selectedRow = ev.data as MsgRow;
+    this.history = this.buildHistoryMock(this.selectedRow);
+
+    // ouverture synchronisée (prep -> is-open)
+    this.detailOpen = false;
+    requestAnimationFrame(() => this.detailOpen = true);
   }
 
-  onSearchClick() {
-    this.search(); // raccourci pour cliquer sur la loupe
+  onDetailClosed() {
+    this.detailOpen = false;
+    this.selectedRow = undefined;
   }
 
-  onResetClick() {
-    this.form.reset();
+  onNavigate(dir: 'previous' | 'next') {
+    const i = this.rowData.findIndex(r => r === this.selectedRow);
+    const j = dir === 'next' ? i + 1 : i - 1;
+    if (j < 0 || j >= this.rowData.length) return;
+    this.selectedRow = this.rowData[j];
+    this.history = this.buildHistoryMock(this.selectedRow);
+    // on laisse detailOpen = true (pas besoin de rejouer l’anim)
   }
-
 
 }

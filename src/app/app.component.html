@@ -169,17 +169,15 @@
             </mat-card-title>
             <mat-card-content>
               <div class="ag-theme-quartz" style="height: 560px; width: 100%;">
+
+
+
                 <ag-grid-angular [columnDefs]="columnDefs" [defaultColDef]="defaultColDef" [rowData]="rowData"
                   (gridReady)="onGridReady($event)" (cellClicked)="onCellClicked($event)"
                   (rowClicked)="onRowClicked($event)" rowSelection="single" [animateRows]="true">
                 </ag-grid-angular>
 
-                <!-- ✅ Ton panneau latéral -->
 
-
-                <app-side-detail [open]="detailOpen" [row]="selectedRow" [history]="history" (closed)="onDetailClosed()"
-                  (navigate)="onNavigate($event)">
-                </app-side-detail>
 
               </div>
             </mat-card-content>
@@ -242,6 +240,16 @@
     </mat-drawer-container>
   </mat-sidenav-content>
 </mat-sidenav-container>
+
+<!-- Drawer plein écran piloté par @Input -->
+
+<app-side-detail
+  [open]="detailOpen"
+  [row]="selectedRow"
+  [history]="history"
+  (closed)="closeDetail()"
+  (navigate)="onNavigate($event)">
+</app-side-detail>
 
 <!-- ================== OVERLAYS HORS CONTAINERS ================== -->
 

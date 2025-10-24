@@ -496,34 +496,67 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
 
+
+
+
+
+
+
   detailOpen = false;
 
 
 
-  onRowClicked(ev: any) {
-    const t = ev.event?.target as HTMLElement | null;
-    if (t && t.closest('.action-icon')) return; // ignore clics sur icônes d’action
 
-    this.selectedRow = ev.data as MsgRow;
+
+
+
+
+
+
+
+
+
+
+
+  onNavigate(direction: 'previous' | 'next') {
+    if (!this.selectedRow || !this.rowData?.length) return;
+
+    const index = this.rowData.findIndex(r => r === this.selectedRow);
+    const nextIndex = direction === 'next' ? index + 1 : index - 1;
+
+    if (nextIndex < 0 || nextIndex >= this.rowData.length) return;
+
+    // 1️⃣ nouvelle ligne sélectionnée
+    this.selectedRow = this.rowData[nextIndex];
+
+    // 2️⃣ met à jour l'historique
     this.history = this.buildHistoryMock(this.selectedRow);
 
-    // ouverture synchronisée (prep -> is-open)
-    this.detailOpen = false;
-    requestAnimationFrame(() => this.detailOpen = true);
+    // 3️⃣ met à jour la sélection dans AG Grid
+    if (this.grid?.api) {
+      this.grid.api.forEachNode(node => {
+        node.setSelected(node.data === this.selectedRow);
+      });
+
+      // 4️⃣ scroll automatique vers la ligne visible
+      this.grid.api.ensureNodeVisible(
+        this.grid.api.getDisplayedRowAtIndex(nextIndex)
+      );
+    }
   }
+
+
+onRowClicked(ev: any) {
+  const t = ev.event?.target as HTMLElement | null;
+  if (t && t.closest('.action-icon')) return; // ignore clic sur icônes
+
+  this.selectedRow = { ...ev.data };               // ✅ crée une nouvelle référence
+  this.history = this.buildHistoryMock(ev.data);   // ✅ génère l’historique
+  this.detailOpen = true;                           // ✅ ouvre la modale
+}
 
   onDetailClosed() {
-    this.detailOpen = false;
-    this.selectedRow = undefined;
-  }
-
-  onNavigate(dir: 'previous' | 'next') {
-    const i = this.rowData.findIndex(r => r === this.selectedRow);
-    const j = dir === 'next' ? i + 1 : i - 1;
-    if (j < 0 || j >= this.rowData.length) return;
-    this.selectedRow = this.rowData[j];
-    this.history = this.buildHistoryMock(this.selectedRow);
-    // on laisse detailOpen = true (pas besoin de rejouer l’anim)
+    this.detailOpen = false;   // <-- FERME
   }
 
 }

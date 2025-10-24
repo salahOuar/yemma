@@ -1,47 +1,68 @@
-import { Component, ChangeDetectorRef, Input, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+  SimpleChanges,
+  OnChanges
+} from '@angular/core';
 import { MatTabGroup, MatTab } from "@angular/material/tabs";
 
 @Component({
   selector: 'app-side-detail',
   templateUrl: './side-detail.html',
   styleUrls: ['./side-detail.css'],
-  imports: [MatTabGroup, MatTab]
+  standalone: true,
+  imports: [MatTabGroup, MatTab],
+  // ✅ OnPush = Angular ne redessine que quand les @Input changent de référence
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class SideDetailComponent {
-  private _open = false;
-  prep = false;     // phase de préparation (monté mais invisible)
-  isOpen = false;   // phase ouverte (anim en cours/finie)
-
-  @Input() row: any = null;
+export class SideDetailComponent implements OnChanges {
+  /** --- Données reçues du parent --- */
+  @Input() open = false;
+  @Input() row: any;
   @Input() history: any[] = [];
 
-  @Input() set open(v: boolean) {
-    if (v === this._open) return;
-    this._open = v;
 
-    if (v) {
-      this.prep = true;
-      this.isOpen = false;
-      this.cdr.detectChanges();
-      requestAnimationFrame(() => {
-        this.prep = false;
-        this.isOpen = true;
-        this.cdr.detectChanges();
-      });
-    } else {
-      this.isOpen = false;
-      this.prep = false;
-      this.cdr.detectChanges();
-    }
-  }
-  get open() { return this._open; }
-
+  /** --- Événements renvoyés au parent --- */
   @Output() closed = new EventEmitter<void>();
   @Output() navigate = new EventEmitter<'previous' | 'next'>();
 
+  /** --- Copie affichée dans le template --- */
+  displayedRow: any;
+  displayedHistory: any[] = [];
+
   constructor(private cdr: ChangeDetectorRef) {}
 
-  close()    { this.closed.emit(); }
-  previous() { this.navigate.emit('previous'); }
-  next()     { this.navigate.emit('next'); }
+  /** Appelé à chaque fois que AppComponent change les @Input */
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['row']) {
+      this.displayedRow = { ...this.row }; // 🔁 copie pour forcer changement
+    }
+    if (changes['history']) {
+      this.displayedHistory = [...this.history];
+    }
+
+    // ✅ Force le rafraîchissement même avec OnPush
+    this.cdr.markForCheck();
+  }
+
+  /** Émet un événement pour fermer la modale */
+  close() {
+    this.closed.emit();
+  }
+
+  /** Émet un événement pour naviguer vers la ligne précédente */
+  previous() {
+      console.info('SideDetailComponent instantiated', this.row);
+    this.navigate.emit('previous');
+  }
+
+  /** Émet un événement pour naviguer vers la ligne suivante */
+  next() {
+      console.info('SideDetailComponent instantiated', this.row);
+    this.navigate.emit('next');
+  }
 }

@@ -294,3 +294,14 @@ button[mat-icon-button]:hover .mat-icon { transform: scale(1.15); }
   .tl-action { font-size: 13px; }
 }
 
+
+
+/* dans app.component.scss */
+.ag-row.ag-row-selected {
+  background-color: #e3f2fd !important; /* bleu clair */
+}
+.ag-row.ag-row-selected:hover {
+  background-color: #bbdefb !important; /* un peu plus foncé au hover */
+}
+
+

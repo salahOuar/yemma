@@ -1,37 +1,32 @@
-<!-- Host : gère l’état (prep / is-open) -->
-<div class="side-host" [class.prep]="prep" [class.is-open]="isOpen">
+<div class="side-host" [class.is-open]="open">
+  <div class="click-blocker"></div>
 
-  <!-- ✅ VEIL-BAR : remplace l'ancien overlay
-       - occupe toute la partie gauche
-       - bloque les clics derrière
-       - seuls les boutons sont cliquables et visibles en blanc
-  -->
-  <div class="veil-bar">
+  <div class="shade-left">
     <div class="btn-column">
       <button class="close-btn" (click)="close()">✕</button>
       <div class="nav-btns">
-        <button (click)="previous()"><</button>
-        <button (click)="next()">></button>
+        <button (click)="previous()">&lt;</button>
+        <button (click)="next()">&gt;</button>
       </div>
     </div>
   </div>
 
-  <!-- Panneau à droite -->
   <div class="side-panel">
     <div class="detail-content">
       <mat-tab-group>
         <mat-tab label="Détail">
-          <div *ngIf="row; else noRow">
-            <div><b>ExtRef:</b> {{ row.extRef }}</div>
-            <div><b>IntRef:</b> {{ row.intRef }}</div>
-            <div><b>Sender:</b> {{ row.sender }}</div>
-            <div><b>Receiver:</b> {{ row.receiver }}</div>
+          <div *ngIf="displayedRow; else noRow">
+            <div><b>ExtRef:</b> {{ displayedRow.extRef }}</div>
+            <div><b>IntRef:</b> {{ displayedRow.intRef }}</div>
+            <div><b>Sender:</b> {{ displayedRow.sender }}</div>
+            <div><b>Receiver:</b> {{ displayedRow.receiver }}</div>
           </div>
           <ng-template #noRow><i>Aucune ligne sélectionnée.</i></ng-template>
         </mat-tab>
+
         <mat-tab label="Historique">
-          <div *ngIf="history?.length; else noHist">
-            <div *ngFor="let h of history">
+          <div *ngIf="displayedHistory?.length; else noHist">
+            <div *ngFor="let h of displayedHistory">
               {{ h.when }} — {{ h.who }} — {{ h.action }}
             </div>
           </div>

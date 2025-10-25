@@ -546,17 +546,20 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 
-onRowClicked(ev: any) {
-  const t = ev.event?.target as HTMLElement | null;
-  if (t && t.closest('.action-icon')) return; // ignore clic sur icônes
+  onRowClicked(ev: any) {
+    const t = ev.event?.target as HTMLElement | null;
+    if (t && t.closest('.action-icon')) return; // ignore clic sur icônes
 
-  this.selectedRow = { ...ev.data };               // ✅ crée une nouvelle référence
-  this.history = this.buildHistoryMock(ev.data);   // ✅ génère l’historique
-  this.detailOpen = true;                           // ✅ ouvre la modale
-}
+    this.selectedRow = { ...ev.data };               // ✅ crée une nouvelle référence
+    this.history = this.buildHistoryMock(ev.data);   // ✅ génère l’historique
+    this.detailOpen = true;                           // ✅ ouvre la modale
+  }
 
   onDetailClosed() {
     this.detailOpen = false;   // <-- FERME
   }
+
+
+
 
 }

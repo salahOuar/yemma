@@ -1,0 +1,57 @@
+activer dans standalone.xml
+
+Sous transactions :
+
+<subsystem xmlns="urn:jboss:domain:transactions:5.0">
+    <core-environment>
+        <process-id>
+            <uuid/>
+        </process-id>
+    </core-environment>
+    <recovery-environment socket-binding="txn-recovery-environment" status-socket-binding="txn-status-manager"/>
+    <object-store path="tx-object-store" relative-to="jboss.server.data.dir"/>
+    <jts enable-statistics="true"/>
+</subsystem>
+
+<logger category="com.arjuna">
+    <level name="DEBUG"/>
+</logger>
+
+<logger category="com.arjuna.ats.jta">
+    <level name="TRACE"/>
+</logger>
+
+<logger category="com.arjuna.ats.jts">
+    <level name="TRACE"/>
+</logger>
+
+<logger category="com.arjuna.ats.internal">
+    <level name="TRACE"/>
+</logger>
+
+<logger category="com.arjuna.ats.jta.recovery">
+    <level name="TRACE"/>
+</logger>
+
+Ce que tu vas voir
+
+Dans les logs JBoss :
+
+XAResource.start()
+
+XAResource.end()
+
+XAResource.prepare()
+
+XAResource.commit()
+
+Liste des participants XA (Oracle XA, JMS XA, MQ XA, etc.)
+
+Identifiant global de transaction : Xid[formatId=..., gtrid=..., bqual=...]
+
+➡️ Tu peux reconstruire le schéma exact du use case juste avec ça.
+
+
+
+Vous avez dit :
+Garde tout ça dans notre discussion je vais te demander de le faire demain 

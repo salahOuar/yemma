@@ -303,3 +303,20 @@ export class AppComponent {
 .material-icons {
   font-size: 18px;
 }
+
+
+Passionné de sport et de running, amateur de musique et de lecture, j’aime apprendre, découvrir et expérimenter de nouvelles technologies. J’ai travaillé plusieurs années dans le secteur bancaire (Crédit Lyonnais, Crédit Agricole, Caisse des Dépôts et Consignations) ainsi qu’en full-stack React/Java à la FER Genève.
+
+Aujourd’hui, je suis vraiment ravi de rejoindre Lombard Odier au sein de l’équipe Message Interbancaire comme développeur full-stack senior Java/Angular. J’ai hâte de m’intégrer, de collaborer avec vous et de contribuer aux projets avec enthousiasme et simplicité.
+
+
+Passionné de sport et de running, amateur de musique et de lecture, j’adore apprendre, découvrir et tester de nouvelles technologies. J’ai évolué plusieurs années dans le secteur bancaire (Crédit Lyonnais, Crédit Agricole, Caisse des Dépôts et Consignations) et récemment travaillé en full-stack React/Java à la FER Genève, où j’ai développé une vraie envie de créer des applications utiles, claires et bien pensées.
+
+Aujourd’hui, je suis vraiment ravi de rejoindre Lombard Odier au sein de l’équipe Message Interbancaire comme développeur full-stack senior Java/Angular. J’ai hâte de collaborer avec vous, de m’intégrer dans l’équipe et de contribuer aux projets avec enthousiasme et simplicité.
+
+
+Passionné de sport et de running, amateur de musique et de lecture, j’aime apprendre, découvrir et expérimenter de nouvelles technologies. J’ai travaillé plusieurs années dans le secteur bancaire (Crédit Lyonnais, Crédit Agricole, Caisse des Dépôts et Consignations) ainsi qu’en full-stack React/Java à la FER Genève.
+
+Depuis mon arrivée chez Lombard Odier, j’ai trouvé un environnement technique stimulant, avec un vrai esprit d’équipe et beaucoup de bienveillance — des conditions idéales pour évoluer et donner le meilleur de moi-même.
+
+Je suis vraiment ravi de faire partie de l’équipe Message Interbancaire en tant que développeur full-stack senior Java/Angular, et j’ai hâte de contribuer aux projets avec enthousiasme et simplicité.

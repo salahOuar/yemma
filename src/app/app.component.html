@@ -174,11 +174,7 @@
 
                 <ag-grid-angular [columnDefs]="columnDefs" [defaultColDef]="defaultColDef" [rowData]="rowData"
                   (gridReady)="onGridReady($event)" (cellClicked)="onCellClicked($event)"
-                  (rowClicked)="onRowClicked($event)" rowSelection="single" [animateRows]="true">
-                </ag-grid-angular>
-
-
-
+                  (rowClicked)="onRowClicked($event)" rowSelection="single" [animateRows]="true" [statusBar]="statusBar" [enableRangeSelection]="true"></ag-grid-angular>
               </div>
             </mat-card-content>
           </mat-card>
@@ -250,6 +246,11 @@
   (closed)="closeDetail()"
   (navigate)="onNavigate($event)">
 </app-side-detail>
+
+<app-floating-actions 
+    [row]="selectedRow"
+    (close)="onClearSelection()">
+  </app-floating-actions>
 
 <!-- ================== OVERLAYS HORS CONTAINERS ================== -->
 

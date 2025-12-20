@@ -27,6 +27,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
 // ⚠️ garde ton chemin existant (ou adapte selon ton arborescence)
 import { SideDetailComponent } from "./components/side-detail/side-detail";
+import { ActionStatusPanelComponent } from './components/side-detail/action-status-panel-component/ActionStatusPanelComponent';
+import { FloatingActionsComponent } from './components/floating-actions-component/FloatingActionsComponent';
 
 type MsgHistoryItem = { when: string; who: string; action: string; };
 
@@ -39,7 +41,7 @@ type MsgHistoryItem = { when: string; who: string; action: string; };
     // material
     MatSidenavModule, MatToolbarModule, MatIconModule, MatListModule,
     MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatCheckboxModule, MatDatepickerModule, MatProgressSpinnerModule, MatTabsModule, MatDialogModule,
+    MatSelectModule, MatCheckboxModule, MatDatepickerModule, MatProgressSpinnerModule, MatTabsModule, MatDialogModule,FloatingActionsComponent,
     RouterLink, RouterLinkActive,
     MatDividerModule,
     // ag-grid
@@ -52,6 +54,25 @@ type MsgHistoryItem = { when: string; who: string; action: string; };
 export class AppComponent implements OnInit, OnDestroy {
   title = 'Messages console';
   collapsed = false;
+
+  // 1. Déclarer le composant pour qu'Angular le reconnaisse dans la grille
+  public components = {
+    actionStatusPanel: ActionStatusPanelComponent
+  };
+
+  // 2. Configurer la barre d'état (Feature Enterprise)
+  public statusBar = {
+    statusPanels: [
+      {
+        statusPanel: 'actionStatusPanel', // Notre composant perso
+        align: 'center',                  // Centré au milieu de la barre
+      },
+      // On peut garder les composants natifs aussi si on veut
+      { statusPanel: 'agTotalAndFilteredRowCountComponent', align: 'left' },
+      { statusPanel: 'agAggregationComponent', align: 'right' }
+    ]
+    
+  };
 
   @ViewChild(AgGridAngular) grid?: AgGridAngular;
   @ViewChild('sidenav') sidenav?: ElementRef<HTMLElement>;
@@ -489,7 +510,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
 
-
+// Appelé si on clique sur la croix du toaster
+  onClearSelection() {
+    this.selectedRow = undefined;
+    // Optionnel : Désélectionner aussi dans la grille visuellement
+    // this.gridApi.deselectAll(); 
+  }
 
 
 
@@ -552,7 +578,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.selectedRow = { ...ev.data };               // ✅ crée une nouvelle référence
     this.history = this.buildHistoryMock(ev.data);   // ✅ génère l’historique
-    this.detailOpen = true;                           // ✅ ouvre la modale
+    this.detailOpen = false;                           // ✅ ouvre la modale
   }
 
   onDetailClosed() {

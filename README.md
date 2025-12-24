@@ -305,18 +305,270 @@ export class AppComponent {
 }
 
 
-Passionné de sport et de running, amateur de musique et de lecture, j’aime apprendre, découvrir et expérimenter de nouvelles technologies. J’ai travaillé plusieurs années dans le secteur bancaire (Crédit Lyonnais, Crédit Agricole, Caisse des Dépôts et Consignations) ainsi qu’en full-stack React/Java à la FER Genève.
-
-Aujourd’hui, je suis vraiment ravi de rejoindre Lombard Odier au sein de l’équipe Message Interbancaire comme développeur full-stack senior Java/Angular. J’ai hâte de m’intégrer, de collaborer avec vous et de contribuer aux projets avec enthousiasme et simplicité.
-
-
-Passionné de sport et de running, amateur de musique et de lecture, j’adore apprendre, découvrir et tester de nouvelles technologies. J’ai évolué plusieurs années dans le secteur bancaire (Crédit Lyonnais, Crédit Agricole, Caisse des Dépôts et Consignations) et récemment travaillé en full-stack React/Java à la FER Genève, où j’ai développé une vraie envie de créer des applications utiles, claires et bien pensées.
-
-Aujourd’hui, je suis vraiment ravi de rejoindre Lombard Odier au sein de l’équipe Message Interbancaire comme développeur full-stack senior Java/Angular. J’ai hâte de collaborer avec vous, de m’intégrer dans l’équipe et de contribuer aux projets avec enthousiasme et simplicité.
+"styles": [
+  "node_modules/primeicons/primeicons.css",
+  "node_modules/primeng/resources/primeng.css",
+  "src/styles.scss"
+]
 
 
-Passionné de sport et de running, amateur de musique et de lecture, j’aime apprendre, découvrir et expérimenter de nouvelles technologies. J’ai travaillé plusieurs années dans le secteur bancaire (Crédit Lyonnais, Crédit Agricole, Caisse des Dépôts et Consignations) ainsi qu’en full-stack React/Java à la FER Genève.
+"styles": [
+  "node_modules/primeicons/primeicons.css",
+  "node_modules/primeng/resources/primeng.css",
 
-Depuis mon arrivée chez Lombard Odier, j’ai trouvé un environnement technique stimulant, avec un vrai esprit d’équipe et beaucoup de bienveillance — des conditions idéales pour évoluer et donner le meilleur de moi-même.
+  // ⚠️ Le thème PrimeNG (light ou dark) — un seul à la fois idéalement
+  "src/assets/primeng/lara-light-blue.theme.css",
 
-Je suis vraiment ravi de faire partie de l’équipe Message Interbancaire en tant que développeur full-stack senior Java/Angular, et j’ai hâte de contribuer aux projets avec enthousiasme et simplicité.
+  // ✅ Ton DS en dernier (tokens, overrides, components)
+  "src/styles.scss"
+]
+
+import { Injectable } from '@angular/core';
+
+@Injectable({ providedIn: 'root' })
+export class ThemeService {
+  setDark(isDark: boolean) {
+    const link = document.getElementById('primeng-theme') as HTMLLinkElement;
+    link.href = isDark
+      ? 'assets/primeng/lara-dark-blue.theme.css'
+      : 'assets/primeng/lara-light-blue.theme.css';
+
+    document.documentElement.classList.toggle('dark', isDark);
+  }
+}
+
+/* styles.scss */
+:root.dark {
+  /* variables à toi si besoin */
+}
+
+.custom-datetime .p-datepicker {
+  border-radius: 12px;
+}
+
+/* Ajustements spécifiques en dark */
+:root.dark .custom-datetime .p-datepicker {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .4);
+}
+
+@Injectable({ providedIn: 'root' })
+export class ThemeService {
+  setDark(isDark: boolean) {
+    const link = document.getElementById('primeng-theme') as HTMLLinkElement;
+    link.href = isDark
+      ? 'assets/primeng/lara-dark-blue.theme.css'
+      : 'assets/primeng/lara-light-blue.theme.css';
+
+    document.documentElement.classList.toggle('dark', isDark); // utile aussi pour TON CSS
+  }
+}
+
+npm install primeng primeicons
+
+
+Bonjour,
+
+Dans le cadre des nouveaux développements en Spring Boot 3 (Jakarta EE), je souhaite signaler un point d’attention concernant la messagerie JMS.
+Le broker HornetQ, basé sur javax.jms, est legacy et n’est pas compatible directement avec Spring Boot 3 (jakarta.jms).
+
+Les applications existantes peuvent bien entendu rester inchangées.
+Pour les nouveaux services, les options techniques envisagées sont :
+
+migration progressive vers ActiveMQ Artemis (successeur officiel de HornetQ),
+
+ou cohabitation HornetQ / Artemis via un bridge JMS.
+
+Ce point est remonté à titre d’anticipation et d’alignement long terme.
+
+Bien cordialement,
+
+
+Architecture JMS – Migration progressive vers Spring Boot 3
+------------------------------------------------------------
+
+Monde legacy (Java EE / javax.jms) :
+----------------------------------
+[Applications existantes]
+        |
+        |  JMS (HornetQ client)
+        v
+   (HornetQ BROKER)
+      - queues / topics
+      - legacy, non maintenu
+      - utilisé par JBoss EAP 6
+
+Monde cible (Jakarta / Spring Boot 3) :
+--------------------------------------
+[Spring Boot 3 services]
+        |
+        |  JMS (Jakarta)
+        v
+   (ActiveMQ Artemis BROKER)
+      - successeur officiel de HornetQ
+      - compatible Spring Boot 3
+      - cloud / OpenShift ready
+
+Migration progressive :
+-----------------------
+(HornetQ) === bridge JMS ===> (Artemis)
+
+- Les applications legacy restent inchangées
+- Les nouveaux services Spring Boot 3 utilisent Artemis
+- Le bridge permet une cohabitation sans rupture
+
+
+Bonjour,
+
+Dans le cadre de la migration progressive de certains composants vers **Spring Boot 3 (Jakarta EE)**, je souhaite partager un **point d’attention technique** concernant la messagerie JMS actuellement basée sur **HornetQ**.
+
+### Contexte
+
+* Spring Boot 3 repose sur **Jakarta EE** (`jakarta.jms.*`)
+* HornetQ est un broker **legacy**, basé sur **Java EE / `javax.jms.*`**, et **n’est plus maintenu**
+* Cette différence d’API rend l’utilisation directe du client HornetQ **non compatible** avec Spring Boot 3
+
+### Impact identifié
+
+* Une application Spring Boot 3 ne peut pas consommer/publier de messages HornetQ de manière fiable via le client HornetQ historique
+* Le risque est principalement **technique (incompatibilité Jakarta / javax)**, plus que fonctionnel
+* Les applications legacy existantes (JBoss EAP 6 / HornetQ) peuvent évidemment rester inchangées à court terme
+
+### Options d’architecture envisageables
+
+1. **Migration progressive vers ActiveMQ Artemis**
+
+   * Artemis est le **successeur officiel de HornetQ**
+   * Compatible Spring Boot 3 / Jakarta
+   * Solution cible long terme, cloud-ready
+
+2. **Cohabitation HornetQ / Artemis via un bridge**
+
+   * Les applications legacy continuent à utiliser HornetQ
+   * Les nouvelles applications Spring Boot 3 utilisent Artemis
+   * Un bridge assure le transfert des messages entre brokers
+   * Permet une migration incrémentale sans impact immédiat
+
+3. **Alternative transitoire**
+
+   * Maintien des applications JMS legacy sur leur stack actuelle
+   * Les nouveaux services Spring Boot 3 s’intègrent via une approche découplée (ex. outbox / intégration asynchrone)
+
+### Point important
+
+Cette remarque n’implique **aucune urgence immédiate**, mais vise à :
+
+* sécuriser les choix techniques pour les nouveaux développements
+* éviter des blocages lors des futures montées de version
+* aligner progressivement l’architecture avec les standards supportés à long terme
+
+Je reste bien entendu disponible pour détailler ces points ou participer à une discussion d’architecture si nécessaire.
+
+Bien cordialement,
+
+Lead développeur Java / Spring / Messaging
+
+
+| Élément       | HornetQ | ActiveMQ (classic) | Artemis | IBM MQ             |
+| ------------- | ------- | ------------------ | ------- | ------------------ |
+| Type          | Broker  | Broker             | Broker  | Broker             |
+| JMS           | javax   | javax              | jakarta | javax / jakarta    |
+| Spring Boot 3 | ❌       | ❌                  | ✅       | ⚠️ (client récent) |
+| Statut        | ❌ Mort  | ⚠️ ancien          | ✅ Actif | ✅ Actif            |
+| Cloud/K8s     | ❌       | ⚠️                 | ✅       | ⚠️                 |
+| Licence       | Open    | Open               | Open    | 💰 Payant          |
+
+
+On va démêler clairement tout ça, parce que beaucoup de gens mélangent JMS, HornetQ, ActiveMQ, IBM MQ alors que ce ne sont PAS la même chose.
+
+Je vais te donner :
+
+la différence fondamentale
+
+un tableau comparatif
+
+un schéma simple (visuel mental)
+
+une règle claire pour ton contexte (Spring Boot 3 / migration)
+
+1️⃣ La clé absolue à comprendre (1 phrase)
+
+👉 JMS est une API (un contrat)
+👉 HornetQ / ActiveMQ / Artemis / IBM MQ sont des BROKERS (implémentations)
+
+💡 JMS ≠ broker
+
+2️⃣ JMS : c’est QUOI exactement ?
+
+JMS (Java Message Service) :
+
+une API Java
+
+définit des interfaces :
+
+ConnectionFactory
+
+Queue
+
+Topic
+
+Message
+
+ne transporte aucun message tout seul
+
+👉 JMS = “comment parler”
+👉 Broker = “où les messages vivent”
+
+3️⃣ Les brokers, un par un (clair et honnête)
+🔴 HornetQ
+
+Ancien broker Red Hat
+
+Utilisé dans JBoss EAP 6
+
+API : javax.jms
+
+❌ Projet arrêté
+
+❌ Incompatible Spring Boot 3
+
+👉 Legacy pur
+
+🟢 ActiveMQ “Classic”
+
+Broker Apache historique
+
+API : javax.jms
+
+Fonctionnel mais ancien
+
+Encore utilisé
+
+👉 Ancien, mais pas mort
+
+🟢 ActiveMQ Artemis
+
+Successeur officiel de HornetQ
+
+Broker moderne
+
+API : jakarta.jms
+
+Cloud / Kubernetes / OpenShift ready
+
+Support Spring Boot 3
+
+👉 Le choix moderne
+
+🔵 IBM MQ (anciennement WebSphere MQ)
+
+Broker IBM
+
+Ultra robuste
+
+Très utilisé en banque
+
+API JMS fournie par IBM
+
+Payant (licence)
+
+👉 Le tank des brokers

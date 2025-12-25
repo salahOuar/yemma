@@ -1,6 +1,6 @@
 import { Component, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatListModule } from '@angular/material/list';
@@ -89,8 +89,8 @@ export class AppComponent implements OnInit, OnDestroy {
     direction: ['Incoming'],
     network: ['SWIFT'],
     type: ['535'],
-    start: [new Date(new Date().setMonth(new Date().getMonth() - 1))],
-    stop: [new Date()],
+    start: [new Date(new Date().setMonth(new Date().getMonth() - 1)), Validators.required],
+    stop: [new Date(), Validators.required],
     replayed: [false],
     countOnly: [false],
     subType: [''],
@@ -100,7 +100,7 @@ export class AppComponent implements OnInit, OnDestroy {
     extRef: [''],
     intRef: [''],
     owner: [''],
-  });
+  }, { validators: this.dateRangeValidator });
 
   // ⛔ supprimé: rightOpen (on ne l’utilise plus)
 
@@ -237,6 +237,21 @@ export class AppComponent implements OnInit, OnDestroy {
       this.total = data.length;
       this.loading = false;
     }, 400);
+  }
+
+  submitSearch() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    this.search();
+  }
+
+  private dateRangeValidator(control: AbstractControl): ValidationErrors | null {
+    const start = control.get('start')?.value as Date | null;
+    const stop = control.get('stop')?.value as Date | null;
+    if (!start || !stop) return null;
+    return start <= stop ? null : { dateRange: true };
   }
 
   onGridReady(params: any) {

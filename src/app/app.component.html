@@ -81,6 +81,9 @@
                     <input matInput [matDatepicker]="dp1" [formControl]="form.controls.start" />
                     <mat-datepicker-toggle matIconSuffix [for]="dp1"></mat-datepicker-toggle>
                     <mat-datepicker #dp1></mat-datepicker>
+                    <mat-error *ngIf="form.controls.start.hasError('required')">
+                      Start date obligatoire
+                    </mat-error>
                   </mat-form-field>
 
                   <mat-form-field class="w-180" appearance="outline">
@@ -88,6 +91,13 @@
                     <input matInput [matDatepicker]="dp2" [formControl]="form.controls.stop" />
                     <mat-datepicker-toggle matIconSuffix [for]="dp2"></mat-datepicker-toggle>
                     <mat-datepicker #dp2></mat-datepicker>
+                    <mat-error *ngIf="form.controls.stop.hasError('required')">
+                      End date obligatoire
+                    </mat-error>
+                    <mat-error
+                      *ngIf="form.hasError('dateRange') && (form.controls.start.touched || form.controls.stop.touched)">
+                      Start date doit être avant end date
+                    </mat-error>
                   </mat-form-field>
                 </div>
 
@@ -96,13 +106,13 @@
 
 
                   <span class="v-nudge">
-                    <button mat-icon-button class="icon-square" matTooltip="Quick search">
+                    <button mat-icon-button class="icon-square" matTooltip="Quick search" (click)="submitSearch()">
                       <mat-icon>search</mat-icon>
                     </button>
                   </span>
 
                   <span class="v-nudge">
-                    <button mat-icon-button class="icon-square" matTooltip="Reset filters">
+                    <button mat-icon-button class="icon-square" matTooltip="Reset filters" (click)="onResetClick()">
                       <mat-icon>refresh</mat-icon>
                     </button>
                   </span>
@@ -149,8 +159,8 @@
 
               <!-- LIGNE 3 — actions seules, à droite -->
               <div class="actions-row">
-                <button mat-stroked-button (click)="form.reset()">Reset</button>
-                <button mat-flat-button color="primary" (click)="search()">Search</button>
+                <button mat-stroked-button (click)="onResetClick()">Reset</button>
+                <button mat-flat-button color="primary" (click)="submitSearch()">Search</button>
               </div>
 
 

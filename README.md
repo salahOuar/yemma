@@ -1899,3 +1899,1598 @@ Do not create a custom documentation framework.
 
 
 
+Oui. Je te conseille de donner à **GitHub Copilot en mode Agent/Expert** un prompt en anglais : pour ce type de travail Java/Spring complexe, il est généralement plus précis.
+
+Le prompt ci-dessous est volontairement très directif : il lui demande d’abord **d’analyser le repository existant**, de réutiliser l’architecture actuelle, puis de concevoir la solution avant de modifier le code.
+
+# GitHub Copilot Expert Prompt — Automated EAP6 vs Spring Non-Regression Testing Framework
+
+You are acting as a **Principal Java Architect, Senior Spring Engineer, Integration Testing Expert, IBM MQ/JMS Expert, Test Automation Architect and Banking Messaging Specialist**.
+
+Work at an **Expert++++ / production-grade engineering level**.
+
+Your task is to analyze this repository and design/implement a **clean, maintainable, automated non-regression testing framework** allowing us to compare the behavior of:
+
+* the **legacy EAP6/JEE application**
+* the **new Spring application**
+
+The goal is to prove that, for exactly the **same business input messages**, both applications produce functionally equivalent outputs.
+
+Do NOT rush into coding.
+
+First inspect the repository thoroughly and understand:
+
+* existing architecture;
+* modules;
+* Spring configuration;
+* JMS configuration;
+* IBM MQ integration;
+* Quartz jobs;
+* message processors;
+* transformation services;
+* routing logic;
+* compliance processing;
+* debulk processing;
+* JPA repositories;
+* Oracle persistence;
+* existing tests;
+* test utilities;
+* testcontainers configuration if any;
+* Maven dependencies;
+* existing integration-test conventions.
+
+Reuse existing project conventions whenever they are good.
+
+Do NOT invent classes, queues, APIs, field names or infrastructure if the repository already contains the real equivalents.
+
+---
+
+## 1. BUSINESS CONTEXT
+
+We are migrating an interbank messaging application from **EAP6/JEE to Spring**.
+
+The application processes several families/types of financial messages, for example:
+
+* CAMT messages;
+* CAMT052;
+* CAMT053;
+* CAMT054;
+* CAMT914 or other CAMT/message types already supported by the repository;
+* SWIFT messages;
+* other existing supported message types.
+
+There are two major directions that must be validated.
+
+### IN flow
+
+Typical concept:
+
+```text
+IBM MQ / SWIFT input
+        |
+        v
+Application processing
+        |
+        +--> transformation
+        +--> persistence
+        +--> compliance if required
+        +--> debulk if required
+        +--> routing
+        |
+        v
+JMS destination queue
+```
+
+We need to verify that:
+
+```text
+same input
+   |
+   +--------------------+
+   |                    |
+   v                    v
+ EAP6                 Spring
+   |                    |
+   v                    v
+JMS output EAP6    JMS output Spring
+   |                    |
+   +---------+----------+
+             |
+             v
+         Comparator
+```
+
+### OUT flow
+
+Typical concept:
+
+```text
+Internal/JMS message
+        |
+        v
+Application
+        |
+        +--> transformation
+        +--> XML generation
+        +--> encoding
+        +--> headers
+        +--> routing
+        |
+        v
+IBM MQ / SWIFT output
+```
+
+Again, the same input must be processed by both applications.
+
+---
+
+# 2. IMPORTANT ENVIRONMENT CONSTRAINT
+
+This mechanism is intended ONLY for:
+
+* DEV;
+* TEST;
+* integration environments.
+
+It is NOT intended for production.
+
+Therefore:
+
+**double sending is acceptable.**
+
+We do NOT need a production shadow-mode mechanism preventing duplicate sends.
+
+The preferred test strategy is to run:
+
+```text
+EAP6 + Spring
+```
+
+**in parallel**, inject exactly the same business test messages into both systems, capture their outputs, correlate them and compare them.
+
+Do NOT propose as the main strategy:
+
+```text
+2 days EAP6
+then
+2 days Spring
+```
+
+because the two systems would not necessarily process exactly the same dataset.
+
+We need deterministic:
+
+```text
+same input -> EAP6
+same input -> Spring
+```
+
+---
+
+# 3. FUNDAMENTAL TEST PRINCIPLE
+
+For every test case generate at least:
+
+```text
+testRunId
+testCaseId
+```
+
+Example:
+
+```text
+testRunId  = NR-20260814-001
+testCaseId = CAMT052-000123
+```
+
+These identifiers allow us to correlate:
+
+```text
+Input
+EAP6 result
+Spring result
+Comparison result
+```
+
+If the existing protocol cannot carry these identifiers directly, inspect the project and propose the least intrusive correlation mechanism.
+
+Do NOT alter functional production payloads unnecessarily just to add test metadata.
+
+---
+
+# 4. TARGET ARCHITECTURE
+
+Design the solution conceptually like this:
+
+```text
+                     Test Orchestrator
+                           |
+                      Test Dataset
+                           |
+             +-------------+-------------+
+             |                           |
+             v                           v
+       EAP6 input                    Spring input
+             |                           |
+             v                           v
+           EAP6                       Spring
+             |                           |
+             v                           v
+       EAP6 output                 Spring output
+             |                           |
+             v                           v
+       Capture Adapter              Capture Adapter
+             |                           |
+             +-------------+-------------+
+                           |
+                           v
+                     Result Matcher
+                           |
+                           v
+                  Message Comparator
+                           |
+                           v
+                   ComparisonResult
+                           |
+                           v
+                  Report / Persistence
+```
+
+Keep concerns separated.
+
+---
+
+# 5. CLEAN ARCHITECTURE REQUIREMENT
+
+Avoid creating one giant test class or one giant comparator.
+
+Prefer responsibilities such as:
+
+```text
+NonRegressionTestOrchestrator
+
+TestMessageInjector
+LegacyMessageInjector
+SpringMessageInjector
+
+MessageCapture
+LegacyOutputCapture
+SpringOutputCapture
+
+CapturedMessageMapper
+
+MessageResultMatcher
+
+MessageComparator
+PayloadComparator
+BinaryComparator
+XmlComparator
+HeaderComparator
+RoutingComparator
+EncodingComparator
+
+ComparisonResult
+Difference
+
+ComparisonReportGenerator
+```
+
+These names are examples.
+
+Inspect the repository and adapt naming to existing conventions.
+
+Do NOT blindly create all these classes if simpler abstractions already exist.
+
+---
+
+# 6. CANONICAL CAPTURED MESSAGE MODEL
+
+Create or propose a normalized internal representation independent from EAP6/Spring technical APIs.
+
+Conceptually:
+
+```java
+public record CapturedMessage(
+        String testRunId,
+        String testCaseId,
+
+        String direction,
+        String messageType,
+        String messageSubtype,
+
+        String destination,
+
+        String charset,
+        Integer ccsid,
+        Integer encoding,
+        String format,
+
+        String correlationId,
+
+        Map<String, Object> headers,
+        byte[] payload
+) {
+}
+```
+
+Adapt this object to the actual technical information available.
+
+Do NOT force fields that cannot legitimately be obtained.
+
+Its purpose is to make both implementations comparable through one common model.
+
+---
+
+# 7. COMPARATOR REQUIREMENTS
+
+The comparator MUST NOT simply do:
+
+```java
+legacy.equals(spring)
+```
+
+and MUST NOT return only a boolean.
+
+It needs several comparison levels.
+
+## 7.1 Routing comparison
+
+Compare relevant routing information such as:
+
+```text
+expected destination queue
+actual destination queue
+
+network
+message type
+message subtype
+sender
+receiver
+```
+
+only where these fields exist in the actual project.
+
+Routing differences are FUNCTIONAL differences.
+
+---
+
+## 7.2 Encoding comparison
+
+Encoding regressions are extremely important.
+
+Where available compare:
+
+```text
+charset
+CCSID
+MQ encoding
+MQ format
+content encoding
+```
+
+Example expected result:
+
+```text
+Legacy:
+CCSID    = 1208
+Encoding = ...
+Format   = MQSTR
+
+Spring:
+CCSID    = 1208
+Encoding = ...
+Format   = MQSTR
+```
+
+Do not assume specific values.
+
+Read them from the actual system.
+
+---
+
+# 8. BINARY PAYLOAD COMPARISON
+
+First perform strict byte comparison:
+
+```java
+Arrays.equals(legacy.payload(), spring.payload())
+```
+
+This result is important because it can expose differences related to:
+
+* encoding;
+* BOM;
+* CRLF vs LF;
+* whitespace;
+* serialization;
+* hidden characters;
+* byte-level transformation differences.
+
+Expose this as:
+
+```text
+binaryIdentical
+```
+
+BUT binary inequality must NOT automatically mean functional regression for XML messages.
+
+---
+
+# 9. XML SEMANTIC COMPARISON
+
+For XML messages, implement a second comparison level.
+
+Requirements:
+
+* parse safely;
+* disable unsafe XML external entity behavior;
+* support XML namespaces correctly;
+* compare element names;
+* compare namespace URIs;
+* compare attributes;
+* compare values;
+* compare meaningful structure;
+* report useful XPath-like locations for differences.
+
+Example:
+
+```text
+/Document/BkToCstmrStmt/Stmt/Bal/Amt
+
+Legacy:
+1250.00
+
+Spring:
+125.00
+```
+
+This is a real functional regression.
+
+But:
+
+```xml
+<Amount>100</Amount>
+```
+
+and:
+
+```xml
+<Amount>
+    100
+</Amount>
+```
+
+may be semantically equivalent depending on the XML semantics.
+
+The report must distinguish:
+
+```text
+binary different
+but
+XML semantically equivalent
+```
+
+Use a mature existing XML comparison library if appropriate rather than reinventing a fragile XML diff engine.
+
+Evaluate available libraries already present in the project before adding a new dependency.
+
+If proposing a new dependency, justify it.
+
+---
+
+# 10. IGNORE / NORMALIZATION RULES
+
+Some values will legitimately differ between EAP6 and Spring.
+
+Examples may include:
+
+```text
+JMSMessageID
+JMSTimestamp
+MQMD.MsgId
+technical UUID
+technical timestamps
+processing date/time
+generated technical correlation identifiers
+```
+
+Do NOT blindly ignore them.
+
+Identify which values are truly technical and non-functional.
+
+Provide configurable rules such as:
+
+```yaml
+non-regression:
+  comparison:
+
+    xml:
+      ignored-xpaths:
+        - ...
+
+    headers:
+      ignored:
+        - JMSMessageID
+        - JMSTimestamp
+
+    strict:
+      routing: true
+      encoding: true
+      message-type: true
+```
+
+Use the repository's existing configuration strategy.
+
+Avoid hardcoding ignore rules deep inside Java code.
+
+---
+
+# 11. DIFFERENCE MODEL
+
+Do NOT return only:
+
+```java
+boolean equals;
+```
+
+Design something similar to:
+
+```java
+public record Difference(
+        DifferenceType type,
+        String location,
+        Object legacyValue,
+        Object springValue,
+        String description
+) {}
+```
+
+Potential difference types:
+
+```text
+BINARY
+XML_STRUCTURE
+XML_VALUE
+XML_ATTRIBUTE
+XML_NAMESPACE
+HEADER
+ENCODING
+ROUTING
+DESTINATION
+MISSING_OUTPUT
+UNEXPECTED_OUTPUT
+```
+
+Adapt the enum to actual requirements.
+
+---
+
+# 12. COMPARISON RESULT
+
+Conceptually provide:
+
+```java
+public record ComparisonResult(
+        String testRunId,
+        String testCaseId,
+
+        boolean binaryIdentical,
+        boolean xmlSemanticallyIdentical,
+        boolean headersIdentical,
+        boolean encodingIdentical,
+        boolean routingIdentical,
+
+        ComparisonStatus status,
+
+        List<Difference> differences
+) {}
+```
+
+Possible high-level statuses:
+
+```text
+IDENTICAL
+
+FUNCTIONALLY_IDENTICAL
+
+DIFFERENT
+```
+
+Meaning:
+
+### IDENTICAL
+
+Everything expected is strictly identical.
+
+### FUNCTIONALLY_IDENTICAL
+
+Technical differences only, for example:
+
+```text
+JMSMessageID
+generated timestamp
+XML formatting
+CRLF/LF
+```
+
+while business content remains equivalent.
+
+### DIFFERENT
+
+A real functional difference such as:
+
+```text
+wrong XML value
+missing XML field
+different namespace
+wrong queue
+wrong encoding
+missing header
+wrong routing
+missing message
+unexpected extra message
+```
+
+---
+
+# 13. MULTIPLE OUTPUT MESSAGES
+
+Do NOT assume:
+
+```text
+one input = one output
+```
+
+The application may have:
+
+* debulk;
+* message splitting;
+* compliance flows;
+* multiple JMS outputs;
+* retries;
+* error outputs.
+
+Design correlation so that a test case can produce:
+
+```text
+0..N legacy outputs
+0..N Spring outputs
+```
+
+The comparison mechanism must detect:
+
+```text
+missing output
+additional output
+different number of outputs
+different destination
+different content
+```
+
+Do not rely only on output order if ordering is not contractually guaranteed.
+
+Find suitable business keys/correlation identifiers to match corresponding outputs.
+
+---
+
+# 14. ASYNCHRONOUS PROCESSING
+
+This application is asynchronous.
+
+Do NOT use arbitrary:
+
+```java
+Thread.sleep(...)
+```
+
+Use Awaitility or the existing asynchronous-test mechanism.
+
+Example concept:
+
+```java
+await()
+    .atMost(timeout)
+    .until(() ->
+        legacyResultAvailable(testCaseId)
+        && springResultAvailable(testCaseId)
+    );
+```
+
+Timeouts must be configurable and produce useful error diagnostics.
+
+A timeout should report:
+
+```text
+Legacy output received: yes/no
+Spring output received: yes/no
+testRunId
+testCaseId
+message type
+expected outputs
+```
+
+---
+
+# 15. TEST STACK
+
+Prefer/maintain:
+
+* JUnit 5;
+* Spring integration tests;
+* `@SpringBootTest` where appropriate;
+* Testcontainers;
+* real IBM MQ container where technically feasible;
+* real database container or the project's approved equivalent;
+* real JMS infrastructure where feasible;
+* Awaitility;
+* actual JPA repositories;
+* actual Spring transactions.
+
+Avoid replacing core integration components with mocks for the main non-regression tests.
+
+Mocks are acceptable for narrow unit tests.
+
+The main purpose is **integration/non-regression testing**, not isolated unit testing.
+
+---
+
+# 16. QUARTZ
+
+The application contains Quartz jobs/schedulers.
+
+Do not make integration tests depend on arbitrary cron execution.
+
+If the repository architecture allows it, prefer:
+
+```text
+Quartz Job
+   |
+   v
+small delegation
+   |
+   v
+business processor/service
+```
+
+Tests should preferably invoke the processing service/processor deterministically.
+
+Example conceptual pattern:
+
+```java
+incomingMessageProcessor.processAvailableMessages();
+
+pendingMessageProcessor.processPendingMessages();
+
+complianceResponseProcessor.processAvailableResponses();
+```
+
+Do NOT use these exact method names unless they exist.
+
+Inspect the actual code.
+
+Quartz jobs themselves should remain thin.
+
+Unit-test Quartz delegation separately if necessary.
+
+---
+
+# 17. TEST DATASET
+
+Create a clean strategy for organizing representative test messages.
+
+For example:
+
+```text
+src/test/resources/non-regression/
+
+    in/
+        camt052/
+        camt053/
+        camt054/
+        ...
+
+    out/
+        camt052/
+        camt053/
+        camt054/
+        ...
+
+    compliance/
+
+    debulk/
+
+    errors/
+```
+
+But first inspect the repository's current resource conventions.
+
+Each test dataset item should ideally define:
+
+```text
+testCaseId
+direction
+messageType
+input resource
+expected output count
+optional comparison rules
+optional metadata
+```
+
+Avoid duplicating large amounts of Java boilerplate per test.
+
+Use parameterized tests or a scenario abstraction where appropriate.
+
+---
+
+# 18. TEST SCENARIOS
+
+Cover at least the project-relevant variants discovered in the repository.
+
+Potential categories:
+
+```text
+IN normal flow
+OUT normal flow
+
+CAMT052
+CAMT053
+CAMT054
+other CAMT types
+
+SWIFT
+
+compliance required
+compliance not required
+compliance success
+compliance error
+compliance HIT
+compliance NO_HIT
+
+debulk required
+debulk not required
+debulk success
+debulk error
+
+routing to correct JMS queue
+
+routing to correct IBM MQ destination
+
+encoding validation
+
+XML validation
+
+header validation
+
+missing mandatory information
+
+malformed input
+
+functional error path
+technical error path
+```
+
+Do not fabricate scenarios unsupported by the application.
+
+Derive the final test matrix from real code.
+
+---
+
+# 19. REPORTING
+
+The objective is not simply for JUnit to print:
+
+```text
+AssertionError
+```
+
+Produce structured results that can later feed:
+
+* Jenkins;
+* HTML report;
+* JSON report;
+* potentially an Angular UI.
+
+Example global report:
+
+```text
+NON REGRESSION REPORT
+
+Test Run:
+NR-20260814-001
+
+Legacy:
+EAP6 build ...
+
+Spring:
+build ...
+
+Total cases:
+12,842
+
+IDENTICAL:
+12,100
+
+FUNCTIONALLY_IDENTICAL:
+740
+
+DIFFERENT:
+2
+```
+
+Per message type:
+
+```text
+CAMT052
+  total: ...
+  identical: ...
+  functional equivalent: ...
+  different: ...
+
+CAMT053
+  ...
+```
+
+Per direction:
+
+```text
+IN
+OUT
+```
+
+Detailed failure example:
+
+```text
+Test case:
+CAMT054-00873
+
+Direction:
+OUT
+
+Difference:
+XML_VALUE
+
+Location:
+/Document/.../Amt
+
+Legacy:
+1250.00
+
+Spring:
+125.00
+```
+
+Also display:
+
+```text
+binary comparison
+XML semantic comparison
+encoding comparison
+header comparison
+routing comparison
+```
+
+---
+
+# 20. MACHINE-READABLE OUTPUT
+
+Create a machine-readable result structure suitable for JSON serialization.
+
+Example concept:
+
+```json
+{
+  "testRunId": "NR-20260814-001",
+  "testCaseId": "CAMT054-00873",
+  "messageType": "CAMT054",
+  "direction": "OUT",
+
+  "status": "DIFFERENT",
+
+  "binaryIdentical": false,
+  "xmlSemanticallyIdentical": false,
+  "encodingIdentical": true,
+  "headersIdentical": true,
+  "routingIdentical": true,
+
+  "differences": [
+    {
+      "type": "XML_VALUE",
+      "location": "/Document/.../Amt",
+      "legacyValue": "1250.00",
+      "springValue": "125.00"
+    }
+  ]
+}
+```
+
+Do not copy this structure blindly if a better model fits the repository.
+
+---
+
+# 21. JENKINS / CI
+
+Design the solution so that eventually Jenkins can run:
+
+```text
+deploy/start dependencies
+        |
+        v
+start EAP6 test instance
+        |
+        v
+start Spring test instance
+        |
+        v
+load non-regression dataset
+        |
+        v
+inject same messages
+        |
+        v
+wait for processing
+        |
+        v
+capture outputs
+        |
+        v
+compare
+        |
+        v
+generate report
+        |
+        v
+PASS / FAIL pipeline
+```
+
+The build should fail only according to an explicit policy.
+
+Example:
+
+```text
+DIFFERENT > 0 => FAILED
+FUNCTIONALLY_IDENTICAL => allowed
+IDENTICAL => allowed
+```
+
+Make that policy configurable.
+
+---
+
+# 22. PERFORMANCE / SCALE
+
+The framework must be able to run more than a handful of tests.
+
+Do not design it only for:
+
+```text
+5 messages
+```
+
+It should potentially process hundreds or thousands of captured messages.
+
+Therefore consider:
+
+* efficient message correlation;
+* no quadratic matching algorithm;
+* bounded memory;
+* database-backed result storage if needed;
+* streaming/batching where appropriate;
+* deterministic cleanup per `testRunId`.
+
+Do not prematurely overengineer, but avoid obviously non-scalable design.
+
+---
+
+# 23. TEST ISOLATION
+
+Every test run must be isolated.
+
+Use:
+
+```text
+testRunId
+```
+
+to distinguish runs.
+
+Provide cleanup strategies for:
+
+* DB test records;
+* queues;
+* captured messages;
+* result tables;
+* temporary files.
+
+A failed previous run must not corrupt the next run.
+
+---
+
+# 24. DATABASE
+
+Do NOT design the comparator around comparing internal EAP6 and Spring database schemas.
+
+The primary goal is behavioral comparison at system boundaries:
+
+```text
+same input
+    |
+    v
+application
+    |
+    v
+same observable output?
+```
+
+Internal schemas/implementations may legitimately differ.
+
+Use DB only where useful for:
+
+* orchestration;
+* message lookup;
+* storing captured results;
+* storing reports;
+* correlation.
+
+---
+
+# 25. SECURITY / XML SAFETY
+
+For XML parsing:
+
+* disable XXE;
+* disable external entities;
+* avoid external DTD loading;
+* use secure parser configuration;
+* handle malformed XML cleanly.
+
+A malformed XML must generate an explicit comparison error, not an obscure stack trace.
+
+---
+
+# 26. OBSERVABILITY
+
+Use structured logs.
+
+Every important log should contain where relevant:
+
+```text
+testRunId
+testCaseId
+messageType
+direction
+legacy/spring side
+```
+
+Example:
+
+```text
+[NR-20260814-001]
+[CAMT052-00123]
+[SPRING]
+Output captured from JMS.CAMT052
+```
+
+Do not log sensitive full banking message payloads indiscriminately.
+
+Respect existing logging/security conventions.
+
+---
+
+# 27. CODE QUALITY
+
+Use:
+
+* modern Java;
+* immutability where appropriate;
+* records where they add value;
+* constructor injection;
+* SOLID;
+* clear domain naming;
+* small cohesive classes;
+* no unnecessary static utility god classes;
+* no duplicated comparator logic;
+* no magic strings;
+* configuration properties;
+* proper exception hierarchy only where useful.
+
+Avoid:
+
+* one enormous `NonRegressionTest.java`;
+* one enormous `Comparator.java`;
+* deeply nested `if` trees;
+* copy/paste tests;
+* arbitrary sleeps;
+* mocks everywhere;
+* hardcoded queue names;
+* hardcoded timeouts;
+* hardcoded ignored fields.
+
+---
+
+# 28. DO NOT BREAK EXISTING APPLICATION CODE
+
+Minimize changes to business code.
+
+Prefer adding test infrastructure/adapters around existing logic rather than polluting production services with:
+
+```java
+if (testMode) {
+   ...
+}
+```
+
+Avoid spreading non-regression-specific conditions through production code.
+
+If a seam is needed, introduce a clean abstraction with legitimate architectural value.
+
+---
+
+# 29. FIRST PHASE — ANALYZE BEFORE CODING
+
+Before modifying any code, give me a repository-specific technical analysis.
+
+Output:
+
+## A. Current architecture
+
+Explain what you found.
+
+## B. Existing reusable components
+
+List existing classes/configurations we can reuse.
+
+## C. Missing seams
+
+Identify what currently prevents parallel automated non-regression testing.
+
+## D. Proposed architecture
+
+Provide an ASCII diagram adapted to THIS repository.
+
+## E. Proposed package/module structure
+
+Use real existing package names.
+
+## F. Message correlation strategy
+
+Explain precisely how the same EAP6 and Spring results will be matched.
+
+## G. Output capture strategy
+
+Explain exactly where/how outputs can be captured for:
+
+```text
+IN -> JMS
+OUT -> IBM MQ/SWIFT
+```
+
+## H. Comparator strategy
+
+Explain:
+
+```text
+binary
+XML
+encoding
+headers
+routing
+ignored technical values
+```
+
+## I. Test scenario matrix
+
+Based on the real repository.
+
+## J. Implementation plan
+
+Give incremental steps.
+
+Do NOT implement everything before presenting this analysis.
+
+---
+
+# 30. SECOND PHASE — IMPLEMENT IN SMALL COHERENT STEPS
+
+After the architecture is established, implement incrementally.
+
+Recommended progression:
+
+### Step 1
+
+Normalized `CapturedMessage` model.
+
+### Step 2
+
+Comparison domain:
+
+```text
+ComparisonResult
+Difference
+ComparisonStatus
+DifferenceType
+```
+
+### Step 3
+
+Small specialized comparators.
+
+### Step 4
+
+XML semantic comparator.
+
+### Step 5
+
+Configurable ignore/normalization rules.
+
+### Step 6
+
+EAP6/Spring output capture adapters.
+
+### Step 7
+
+Correlation/result matcher.
+
+### Step 8
+
+Test orchestrator.
+
+### Step 9
+
+Representative tests for one message type.
+
+For example CAMT052 if appropriate.
+
+### Step 10
+
+Generalize for other message types.
+
+### Step 11
+
+Report generation.
+
+### Step 12
+
+CI/Jenkins integration documentation.
+
+At every step run:
+
+```text
+compile
+unit tests
+integration tests when feasible
+```
+
+Fix compilation/test failures before continuing.
+
+---
+
+# 31. TEST THE COMPARATOR ITSELF
+
+Create dedicated tests proving that the comparator correctly detects:
+
+### Exact binary equality
+
+```text
+IDENTICAL
+```
+
+### XML whitespace-only difference
+
+```text
+binaryIdentical = false
+xmlSemanticallyIdentical = true
+FUNCTIONALLY_IDENTICAL
+```
+
+### Different XML value
+
+```text
+DIFFERENT
+```
+
+### Different XML namespace
+
+```text
+DIFFERENT
+```
+
+### Different business header
+
+```text
+DIFFERENT
+```
+
+### Ignored technical header difference
+
+```text
+FUNCTIONALLY_IDENTICAL
+```
+
+### Different destination queue
+
+```text
+DIFFERENT
+```
+
+### Different encoding
+
+```text
+DIFFERENT
+```
+
+### Missing Spring output
+
+```text
+DIFFERENT / MISSING_OUTPUT
+```
+
+### Additional Spring output
+
+```text
+DIFFERENT / UNEXPECTED_OUTPUT
+```
+
+### Debulk with N outputs
+
+Correctly match and compare every produced message.
+
+---
+
+# 32. IMPORTANT: EXPLAIN DESIGN DECISIONS
+
+When you choose a solution, explain why.
+
+For example:
+
+```text
+Why XMLUnit rather than custom XML comparison?
+Why Awaitility?
+Why capture at system boundaries?
+Why normalize messages?
+Why not compare databases?
+Why not use Thread.sleep?
+Why not compare JMSMessageID?
+```
+
+I want engineering reasoning, not only code generation.
+
+---
+
+# 33. DEPENDENCY POLICY
+
+Before introducing any new Maven dependency:
+
+1. inspect existing dependencies;
+2. check whether current dependencies already solve the problem;
+3. explain why a new dependency is justified;
+4. use a stable, actively maintained library compatible with the project's Java/Spring version;
+5. avoid unnecessary frameworks.
+
+---
+
+# 34. README / DOCUMENTATION
+
+Create/update dedicated documentation such as:
+
+```text
+docs/non-regression-testing.md
+```
+
+or the project's appropriate documentation location.
+
+Include Mermaid diagrams if Mermaid is already acceptable in the repository.
+
+Document:
+
+```text
+architecture
+test execution
+EAP6/Spring parallel execution
+testRunId
+testCaseId
+message injection
+message capture
+comparison rules
+ignored fields
+XML comparison
+encoding comparison
+routing comparison
+report interpretation
+adding a new message type
+adding a new ignored XPath
+running locally
+running in CI
+troubleshooting
+```
+
+Include a diagram such as:
+
+```mermaid
+flowchart LR
+    T[Test Dataset]
+    E[EAP6]
+    S[Spring]
+    LE[Legacy Output]
+    SE[Spring Output]
+    C[Comparator]
+    R[Report]
+
+    T --> E
+    T --> S
+    E --> LE
+    S --> SE
+    LE --> C
+    SE --> C
+    C --> R
+```
+
+Adapt it to the actual architecture.
+
+---
+
+# 35. FINAL EXPECTATION
+
+The resulting framework must allow us to make a statement like:
+
+```text
+Non-regression run NR-20260814-001
+
+12,842 test messages processed through both applications.
+
+12,100 strictly identical.
+740 functionally equivalent with only accepted technical differences.
+2 functional regressions.
+
+CAMT052: 100%
+CAMT053: 100%
+CAMT054: 99.98%
+...
+
+IN routing validated.
+OUT SWIFT generation validated.
+XML validated.
+Encoding validated.
+Headers validated.
+Destinations validated.
+```
+
+For every regression we must know precisely:
+
+```text
+which test case
+which message type
+which direction
+which field/XPath/header
+legacy value
+Spring value
+reason for failure
+```
+
+---
+
+# CRITICAL WORKING RULES
+
+* Inspect before modifying.
+* Reuse existing abstractions.
+* Do not invent repository APIs.
+* Do not rewrite working business logic unnecessarily.
+* Do not produce a giant test class.
+* Do not use arbitrary sleeps.
+* Do not overuse mocks.
+* Do not compare only Strings.
+* Do not consider all binary XML differences functional regressions.
+* Do not ignore encoding.
+* Do not ignore routing.
+* Do not ignore namespaces.
+* Do not assume one input produces one output.
+* Do not rely on message order for correlation unless guaranteed.
+* Do not compare unstable technical IDs as business data.
+* Do not hide meaningful differences with overly broad normalization.
+* Prefer explicit deterministic tests.
+* Keep the architecture extensible for new CAMT/SWIFT message types.
+
+Start now by **analyzing the repository only**.
+
+Do not implement immediately.
+
+Give me the repository-specific architecture assessment, identify the exact classes/components involved, and propose the smallest clean implementation that satisfies this non-regression requirement.

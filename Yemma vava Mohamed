@@ -1,0 +1,178 @@
+Tu es un expert Java/JEE, JBoss EAP 6, JMS, IBM MQ, transactions,
+Oracle et architecture Clean Code.
+
+MISSION
+
+Implémenter une capture technique des entrées et sorties de cette
+application EAP 6, pour constituer une référence de non-régression
+qui sera rejouée par une autre application Spring.
+
+Tu n’as PAS accès au code Spring.
+Un autre agent réalisera cette partie à partir du contrat de fichiers
+et des exemples que tu dois livrer.
+
+CONTEXTE
+
+L’application possède :
+- message_in : messages reçus depuis IBM MQ ou des fichiers.
+- message_out : messages reçus depuis JMS.
+  Attention : ce n’est pas une table des sorties finales.
+- Des références telles que internalRef, externalRef, internalKey,
+  type et dates.
+- Pas d’enregistrement actuel des payloads de sortie.
+
+Les sorties peuvent être JMS, IBM MQ ou REST.
+Les traitements peuvent être asynchrones, passer par Oracle,
+Quartz, la conformité, le bulk et le debulk.
+
+OBJECTIF ET CONTRAINTES
+
+Capturer les échanges externes, pas les parcours internes.
+Aucune modification des règles métier.
+Ne pas modifier payloads, headers métier, routages ou transactions
+pour ajouter une corrélation.
+
+Limiter les changements aux frontières techniques et à la configuration.
+Privilégier les points d’extension et composants centralisés existants.
+Éviter AOP généralisé, agents Java, tracing distribué,
+nouveau microservice et framework maison.
+
+Respecter strictement la version Java et les dépendances d’EAP 6.
+Ne pas introduire du Java 25 dans le legacy.
+
+Capture désactivée par défaut, activable explicitement en dev/test.
+Le fonctionnement normal des envois reste conservé.
+
+1. ANALYSER LE CODE AVANT DE CHOISIR
+
+Identifier avec fichiers et méthodes :
+- Réceptions IBM MQ, JMS et fichiers.
+- Conversion des messages entrants.
+- Sérialisation et émission JMS / IBM MQ / REST.
+- Résolution des destinations.
+- Transactions et reprises asynchrones.
+- Références accessibles aux points d’envoi.
+- Liens persistants éventuellement exploitables en lecture seule.
+
+Choisir après analyse entre :
+
+A. CORRÉLATION INDIVIDUELLE
+Une référence accessible dans l’objet, les arguments, les headers
+ou le payload permet de relier réellement une sortie à une entrée.
+
+B. COMPARAISON PAR CAMPAGNE
+Aucun lien fiable n’est disponible sans modifier le métier.
+Capturer alors les ensembles d’entrées et sorties d’une campagne isolée.
+
+Autoriser un résultat mixte : certains échanges sont corrélables,
+d’autres non. Décrire cette capacité explicitement dans les fichiers.
+Ne jamais inventer un lien ou déduire une corrélation uniquement
+d’une proximité temporelle.
+
+Vérifier unicité, doublons, identifiants générés et cas bulk/debulk.
+Un ThreadLocal ne résout pas les reprises par base et Quartz.
+Un hash de payload n’est pas une preuve de filiation.
+
+2. CAPTURER AUX FRONTIÈRES
+
+Entrées : avant transformation.
+Sorties : après sérialisation et calcul de destination.
+
+Conserver :
+- Payload exact disponible.
+- Type de message et transport.
+- Headers et propriétés utiles avec leurs types.
+- Origine ou destination physique et logique.
+- Identifiant unique de capture.
+- Références existantes et signification de chacune.
+- Ordre pertinent, horodatage et campagne.
+- Résultat technique observé de l’émission.
+
+Ne pas altérer ou consommer le message en le capturant.
+Distinguer TextMessage et BytesMessage.
+Ne pas inventer les octets réseau d’un TextMessage.
+
+Distinguer tentative, retour du client et résultat transactionnel
+lorsqu’il est observable. Ne pas présenter un retour de send()
+comme une preuve de livraison finale.
+
+Capturer aussi les requêtes/réponses REST, erreurs et réponses
+asynchrones nécessaires pour rejouer sans les tiers.
+Distinguer les sorties finales des requêtes adressées aux tiers
+lorsque cette distinction est démontrable.
+
+3. PRODUIRE UN CONTRAT INDÉPENDANT DE JAVA
+
+Créer un contrat versionné, sans sérialisation d’objets Java,
+sans dépendance à une classe EAP ou Spring.
+
+Format simple :
+- JSON pour manifeste et métadonnées.
+- Fichiers séparés pour payloads.
+- Chemins relatifs portables.
+- Types, encodages et valeurs absentes explicitement définis.
+
+Les dossiers d’entrées à exposer sont :
+- input/ibm-mq/
+- input/jms/
+
+Conserver l’origine FILE pour les entrées initialement issues
+de fichiers ; documenter leur classement et leur point d’entrée
+logique, sans les faire passer artificiellement pour IBM MQ.
+
+Prévoir également sorties attendues et échanges tiers.
+Un manifeste décrit tous les fichiers et les capacités de corrélation.
+Ne pas supposer qu’un scénario contient une seule entrée/sortie.
+
+Conserver l’ordre disponible sans prétendre reconstruire un ordre
+global fiable à partir des horodatages de plusieurs threads.
+
+Écriture incrémentale bornée et publication atomique des fichiers
+complets. Signaler pertes et erreurs : une capture incomplète
+ne doit pas sembler valide.
+
+4. CAMPAGNE ET LIMITES
+
+Pour une comparaison globale :
+- Isoler le trafic.
+- Écarter les traitements antérieurs encore actifs.
+- Capturer les entrées de la campagne.
+- Laisser terminer leurs traitements avant clôture.
+- Marquer INCOMPLETE si la clôture ne peut pas être démontrée.
+
+Une semaine calendaire seule ne définit pas un corpus fiable.
+
+Documenter les données initiales, règles de configuration et
+référentiels nécessaires au rejeu.
+Ne pas exporter arbitrairement toute la base.
+
+5. LIVRABLES OBLIGATOIRES POUR L’AUTRE AGENT
+
+- Implémentation de capture fonctionnelle.
+- record-replay-contract.md :
+  format exact, champs, types, sémantique, liens, versions,
+  résultats d’envoi et règles de complétude.
+- Schéma(s) JSON adaptés au format retenu.
+- Un petit corpus d’exemple cohérent.
+  Identifier clairement les exemples synthétiques.
+- spring-handoff.md :
+  ce que Spring doit injecter, capturer et restituer ;
+  règles de rapprochement possibles ;
+  identifiants stables ou variables ;
+  données initiales nécessaires ;
+  limitations et questions non résolues.
+- Procédure de capture et de clôture.
+- Liste des composants techniques modifiés.
+
+Ne pas inventer le point d’injection Spring : décrire la sémantique
+de l’entrée pour que l’autre agent le trouve dans son code.
+
+QUALITÉ
+
+Code expert, simple et explicite, compatible avec le legacy.
+Petites responsabilités, dépendances minimales, ressources fermées.
+Tester de manière ciblée la fidélité de capture et ses erreurs.
+
+Après inspection, présenter brièvement les décisions puis implémenter.
+Ne pas s’arrêter à un plan si le repository permet de réaliser
+une première capture complète.

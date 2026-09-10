@@ -1,0 +1,234 @@
+Tu es un expert Java 25, Spring, Quartz, JMS, IBM MQ, Oracle,
+OpenShift et architecture Clean Code.
+
+MISSION
+
+Implémenter un mode Record & Replay DANS L’APPLICATION SPRING
+DÉMARRÉE, à partir de fichiers capturés par une application EAP 6.
+
+Tu n’as PAS accès au code EAP 6.
+Le contrat et les exemples fournis constituent l’interface d’échange.
+
+Le rejeu est déclenché par un job Quartz, pas par JUnit,
+@SpringBootTest ou une application de test séparée.
+
+DOCUMENTS D’ENTRÉE
+
+Lire :
+- record-replay-contract.md
+- Les schémas JSON.
+- spring-handoff.md
+- Le corpus d’exemple.
+
+S’ils manquent, inspecter le code Spring et identifier les raccordements
+possibles, puis demander précisément les éléments manquants.
+Ne pas inventer un format EAP incompatible.
+
+CONTEXTE
+
+- Java 25 ; vérifier les versions exactes Framework / Boot du projet.
+- OpenShift.
+- message_in : entrées IBM MQ ou fichiers.
+- message_out : entrées JMS, pas sorties finales.
+- Historisation d’états propre à Spring.
+- Traitements potentiellement asynchrones via Oracle et Quartz.
+
+CONTRAINTES
+
+- Aucune modification des règles métier.
+- Conserver conversions, transformations, sérialisation,
+  routage, repositories et transactions réels.
+- Même artefact applicatif qu’en production.
+- Changements limités aux adaptateurs techniques, configuration
+  et orchestration du rejeu.
+- Rejeu désactivé par défaut.
+- Activation explicitement réservée aux environnements dev/test.
+- Aucun appel réel aux systèmes tiers pendant le rejeu.
+- Réutiliser les composants existants.
+- Pas de microservice, UI, endpoint REST de rejeu, tracing distribué,
+  AOP généralisé, agent Java ou framework générique.
+- Ne pas mettre à niveau la stack pour cette tâche.
+
+1. INSPECTION DU CODE
+
+Identifier avec fichiers et méthodes :
+- Adaptateurs d’entrée IBM MQ / JMS / fichiers.
+- Points communs de traitement.
+- Conversions et validations des entrées.
+- Jobs métier à conserver.
+- Composants de sérialisation et émission.
+- Clients REST.
+- Références disponibles lors des envois.
+- Transactions, idempotence et configuration d’environnement.
+
+Choisir les raccordements les moins intrusifs.
+Ne pas contourner un traitement nécessaire dans un listener
+en appelant arbitrairement un service situé trop bas.
+
+2. CHOISIR LA COMPARAISON APRÈS ANALYSE
+
+Confronter les capacités EAP décrites dans le contrat avec celles
+réellement disponibles dans Spring.
+
+A. CORRÉLATION INDIVIDUELLE
+Si les deux versions exposent des liens fiables :
+rassembler les sorties par entrée ou groupe d’entrées.
+Rapprocher les versions via les références stables.
+Les identifiants locaux en base peuvent différer.
+
+B. COMPARAISON GLOBALE
+Si les liens ne sont pas fiables :
+comparer les multiensembles de sorties de la campagne,
+sans imposer de propagation d’identifiant dans le métier.
+
+Autoriser une corrélation partielle, explicitement signalée.
+Aucune correspondance inventée à partir des heures.
+Un hash permet d’apparier des sorties identiques, pas de prouver
+leur rattachement à une entrée.
+
+3. JOB QUARTZ DE REJEU
+
+Lire les entrées finalisées des dossiers :
+- input/ibm-mq/
+- input/jms/
+
+Respecter le manifeste, l’origine FILE éventuelle et l’ordre pertinent.
+Ne pas supposer que le tri des noms de fichiers suffit.
+
+Prévoir processing, done et error.
+Prendre atomiquement les fichiers.
+Valider métadonnées et payloads avant injection.
+Appeler les points d’entrée adéquats avec les métadonnées d’origine.
+
+Distinguer :
+- Entrée injectée.
+- Traitement métier terminé.
+- Campagne clôturée.
+
+Désactiver les réceptions externes remplacées par les fichiers.
+Conserver les autres jobs métier nécessaires au traitement.
+
+Commencer avec un seul pod et une campagne à la fois.
+Utiliser un volume persistant sur OpenShift.
+Réutiliser l’idempotence ou le suivi persistant existant.
+Ne pas prétendre qu’un déplacement de fichier garantit une seule
+injection après un crash.
+Ajouter un suivi technique minimal seulement si nécessaire,
+sans modifier le schéma métier.
+
+4. CAPTURE DES SORTIES EN MODE REJEU
+
+Remplacer le transport final uniquement :
+- JMS : capturer payload, headers et destination.
+- IBM MQ : idem.
+- REST : capturer la requête et restituer la réponse enregistrée.
+
+Préserver la vraie construction des messages et destinations.
+Utiliser les mécanismes compatibles avec les clients existants
+et l’exécution runtime ; ne pas fonder le dispositif sur des mocks
+de tests unitaires.
+
+Les adaptateurs réels doivent être désactivés pour ces échanges,
+pas seulement laissés disponibles derrière un choix ambigu de bean.
+
+Pour les retours asynchrones :
+observer la requête attendue puis injecter la réponse enregistrée
+au bon point d’entrée.
+Adapter explicitement les corrélations générées lorsque nécessaire,
+sans altérer silencieusement les références attendues.
+
+Apparier les interactions tiers selon le contrat.
+Une comparaison globale des sorties n’autorise pas à répondre
+arbitrairement aux requêtes des tiers.
+
+Interaction inattendue, ambiguïté ou réponse non consommée :
+signaler une erreur ou un résultat inconclusif.
+Ne jamais générer un succès par défaut.
+
+5. ÉTAT INITIAL ET CLÔTURE
+
+Utiliser la vraie persistance sur une base de test isolée.
+Documenter les données initiales et configurations nécessaires.
+Ne pas remplacer les repositories par des mocks.
+
+Prévoir une procédure de clôture vérifiable :
+entrées injectées, traitements en attente, échanges tiers,
+erreurs et sorties tardives.
+Une période silencieuse seule ne prouve pas la fin.
+Ne pas utiliser de Thread.sleep arbitraire.
+
+Pour la comparaison globale, interdire le mélange avec un trafic
+extérieur ou des traitements antérieurs non maîtrisés.
+
+6. COMPARATEUR
+
+Comparer :
+- Transport.
+- Destination logique selon mapping explicite.
+- Headers/propriétés contractuels.
+- Payload.
+- Multiplicité, doublons compris.
+
+Comparaison exacte par défaut.
+Hash pour accélérer les correspondances, contrôle des contenus associés.
+Diff XML explicatif sans masquer les écarts binaires.
+Normalisations uniquement si explicitement autorisées par contrat,
+ciblées et affichées dans le rapport.
+
+En comparaison globale :
+présenter sorties manquantes et supplémentaires.
+Un rapprochement entre sorties différentes reste une suggestion
+si aucune référence fiable ne le démontre.
+
+Ne jamais modifier automatiquement les références EAP.
+
+7. RAPPORT RUNTIME
+
+Générer après clôture :
+- Un HTML autonome.
+- Un JSON exploitable par automatisation.
+
+Afficher :
+- Campagne, mode de comparaison et complétude.
+- Entrées injectées / erreurs.
+- Sorties attendues / obtenues.
+- OK / KO / INCONCLUSIF.
+- Destinations et quantités.
+- Différences et liens vers payloads.
+- Correspondances certaines versus suggestions.
+
+Échapper le contenu HTML.
+Une campagne incomplète ne peut pas être OK.
+Permettre de relancer la comparaison sans réinjecter les entrées.
+
+8. CONTRAT AVEC EAP
+
+Ne pas modifier silencieusement le contrat reçu.
+Si des informations indispensables manquent :
+produire contract-feedback.md avec problème, exemple et extension
+minimale proposée pour l’agent EAP.
+Continuer les parties indépendantes sans prétendre que le rejeu
+complet fonctionne.
+
+QUALITÉ ET LIVRAISON
+
+Coder en mode expert Java 25 / Spring :
+Clean Code, injection par constructeur, configuration typée,
+responsabilités limitées, immutabilité pertinente,
+gestion explicite des erreurs et ressources.
+Pas de fonctionnalités preview ni de concurrence inutile.
+
+Des tests ciblés doivent vérifier les composants techniques ;
+le dispositif livré fonctionne dans l’application démarrée.
+
+Livrer :
+- Une première tranche fonctionnelle complète.
+- Configuration de rejeu.
+- Procédure de lancement Quartz, reprise, clôture et comparaison.
+- Configuration OpenShift minimale adaptée au projet.
+- Liste exacte des modifications techniques.
+- Résultats de validation et limites restantes.
+
+Ne pas prétendre valider la livraison réelle par les brokers,
+les transactions de transport ou le comportement multi-pods
+avec ce seul dispositif.
